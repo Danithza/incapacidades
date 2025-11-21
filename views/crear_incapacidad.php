@@ -7,214 +7,138 @@ $usuarios = $controller->obtenerUsuarios();
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-<title>Registrar Incapacidad</title>
-<link rel="stylesheet" href="../public/css/styles.css">
-
-<style>
-
-    body {
-        background: #f4f6f9;
-        font-family: Arial;
-        padding: 25px;
-    }
-
-    h2 {
-        color: #003366;
-        margin-bottom: 20px;
-        text-align: center;
-    }
-
-    .card {
-        background: white;
-        padding: 25px;
-        border-radius: 12px;
-        max-width: 900px;
-        margin: auto;
-        box-shadow: 0 3px 12px rgba(0,0,0,0.15);
-    }
-
-    .grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 18px;
-        margin-top: 10px;
-    }
-
-    label {
-        font-weight: bold;
-        color: #333;
-    }
-
-    input, select, textarea {
-        width: 100%;
-        padding: 10px;
-        border-radius: 8px;
-        border: 1px solid #ccc;
-        transition: .2s;
-        font-size: 15px;
-    }
-
-    input:focus, select:focus, textarea:focus {
-        border-color: #007bff;
-        outline: none;
-        box-shadow: 0px 0px 4px rgba(0,123,255,0.6);
-    }
-
-    textarea {
-        min-height: 70px;
-    }
-
-    .btn-guardar {
-        margin-top: 25px;
-        padding: 12px 20px;
-        width: 100%;
-        background: #007bff;
-        color: white;
-        border: none;
-        border-radius: 10px;
-        font-size: 17px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: 0.2s;
-    }
-
-    .btn-guardar:hover {
-        background: #005fcc;
-    }
-
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Incapacidad</title>
+    <link rel="stylesheet" href="../public/css/styles.css">
 </head>
 <body>
 
 <h2>Registro de Incapacidad</h2>
 
 <div class="card">
-
-<form action="../actions/guardar_incapacidad.php" method="POST">
-
-<div class="grid">
-
-    <div>
-        <label>Mes</label>
-        <select name="mes" required>
-            <option value="">Seleccione...</option>
-            <?php 
-            $meses = ["ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO","AGOSTO",
-                      "SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"];
-            foreach ($meses as $m): ?>
-                <option value="<?= $m ?>"><?= $m ?></option>
-            <?php endforeach; ?>
-        </select>
+    <div class="form-header">
+        <h2>Nueva Incapacidad</h2>
+        <p>Complete todos los campos requeridos (*) para registrar la incapacidad</p>
     </div>
 
-    <div>
-        <label>Número incapacidad</label>
-        <input name="numero_incapacidad" required>
-    </div>
+    <form id="formIncapacidad" action="../actions/guardar_incapacidad.php" method="POST">
+        <div class="grid">
+            <div class="form-group">
+                <label>Mes</label>
+                <select name="mes" required>
+                    <option value="">Seleccione el mes...</option>
+                    <?php 
+                    $meses = ["ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO","AGOSTO",
+                              "SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"];
+                    foreach ($meses as $m): ?>
+                        <option value="<?= $m ?>"><?= $m ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
 
-    <div>
-        <label>Nombre del empleado</label>
-        <select id="usuarioSelect" name="nombre_empleado" required>
-            <option value="">Seleccione...</option>
-            <?php foreach ($usuarios as $u): ?>
-                <option value="<?= $u['nombre_completo'] ?>" 
-                        data-cedula="<?= $u['cedula'] ?>" 
-                        data-area="<?= $u['area'] ?>">
-                    <?= $u['nombre_completo'] ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </div>
+            <div class="form-group">
+                <label>Número incapacidad</label>
+                <input name="numero_incapacidad" placeholder="Ingrese el número de incapacidad" required>
+            </div>
 
-    <div>
-        <label>Cédula</label>
-        <input type="text" id="cedula" name="cedula" readonly required>
-    </div>
+            <div class="form-group">
+                <label>Nombre del empleado</label>
+                <select id="usuarioSelect" name="nombre_empleado" required>
+                    <option value="">Seleccione un empleado...</option>
+                    <?php foreach ($usuarios as $u): ?>
+                        <option value="<?= htmlspecialchars($u['nombre_completo']) ?>" 
+                                data-cedula="<?= htmlspecialchars($u['cedula']) ?>" 
+                                data-area="<?= htmlspecialchars($u['area']) ?>">
+                            <?= htmlspecialchars($u['nombre_completo']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
 
-    <div>
-        <label>Área</label>
-        <input type="text" id="area" name="area" readonly required>
-    </div>
+            <div class="form-group">
+                <label>Cédula</label>
+                <input type="text" id="cedula" name="cedula" readonly required placeholder="Se completará automáticamente">
+            </div>
 
-    <div>
-        <label>Código diagnóstico</label>
-        <input name="cod_diagnostico">
-    </div>
+            <div class="form-group">
+                <label>Área</label>
+                <input type="text" id="area" name="area" readonly required placeholder="Se completará automáticamente">
+            </div>
 
-    <div>
-        <label>Diagnóstico</label>
-        <textarea name="diagnostico"></textarea>
-    </div>
+            <div class="form-group">
+                <label>Número de orden</label>
+                <input name="numero_orden" placeholder="Número de orden (opcional)">
+            </div>
 
-    <div>
-        <label>Tipo incapacidad</label>
-        <input name="tipo_incapacidad">
-    </div>
+            <div class="form-group">
+                <label>Código diagnóstico</label>
+                <input name="cod_diagnostico" placeholder="Código del diagnóstico (opcional)">
+            </div>
 
-    <div>
-        <label>EPS / ARL</label>
-        <input name="eps_arl">
-    </div>
+            <div class="form-group">
+                <label>Diagnóstico</label>
+                <textarea name="diagnostico" placeholder="Descripción del diagnóstico (opcional)"></textarea>
+            </div>
 
-    <div>
-        <label>Fecha inicio</label>
-        <input type="date" name="inicio">
-    </div>
+            <div class="form-group">
+                <label>Tipo incapacidad</label>
+                <select id="tipoIncapacidad" name="tipo_incapacidad" required>
+                    <option value="">Seleccione el tipo...</option>
+                    <option value="ORIGEN COMUN">ORIGEN COMUN</option>
+                    <option value="ORIGEN LABORAL">ORIGEN LABORAL</option>
+                </select>
+            </div>
 
-    <div>
-        <label>Fecha fin</label>
-        <input type="date" name="termina">
-    </div>
+            <div class="form-group">
+                <label>EPS / ARL</label>
+                <select id="epsArl" name="eps_arl" required>
+                    <option value="">Seleccione EPS/ARL...</option>
+                    <option value="COLMENA SAS">COLMENA SAS</option>
+                    <option value="NUEVA EPS">NUEVA EPS</option>
+                    <option value="SALUD TOTAL">SALUD TOTAL</option>
+                    <option value="SALUD VIDA">SALUD VIDA</option>
+                    <option value="SANITAS">SANITAS</option>
+                    <option value="FAMISANAR EPS">FAMISANAR EPS</option>
+                    <option value="COMPENSAR EPS">COMPENSAR EPS</option>
+                </select>
+            </div>
 
-    <div>
-        <label>Días incapacidad</label>
-        <input type="number" name="dias_incapacidad">
-    </div>
+            <div class="form-group">
+                <label>Fecha inicio</label>
+                <input type="date" name="inicio" id="fechaInicio" required>
+            </div>
 
-    <div>
-        <label>Días a cargo entidad</label>
-        <input type="number" name="dias_a_cargo_entidad">
-    </div>
+            <div class="form-group">
+                <label>Fecha fin</label>
+                <input type="date" name="termina" id="fechaFin" required>
+            </div>
 
-    <div>
-        <label>Valor</label>
-        <input type="number" step="0.01" name="valor">
-    </div>
+            <div class="form-group">
+                <label>Días incapacidad</label>
+                <input type="number" name="dias_incapacidad" id="diasIncapacidad" min="1" required placeholder="0">
+            </div>
 
-    <div>
-        <label>Valor Aprox</label>
-        <input type="number" step="0.01" name="valor_aprox">
-    </div>
+            <div class="form-group">
+                <label>Días a cargo entidad</label>
+                <input type="number" name="dias_a_cargo_entidad" id="diasCargoEntidad" min="0" required placeholder="0">
+            </div>
 
-    <div>
-        <label>Estado del proceso</label>
-        <input name="estado_proceso">
-    </div>
+            <div class="form-group">
+                <label>Valor</label>
+                <input type="number" step="0.01" name="valor" placeholder="0.00">
+            </div>
 
-    <div>
-        <label>Aplicación del pago</label>
-        <input name="aplicacion_pago">
-    </div>
+            <div class="form-group full-width">
+                <label>Observaciones</label>
+                <textarea name="observaciones" placeholder="Observaciones adicionales..."></textarea>
+            </div>
+        </div>
 
-    <div style="grid-column: span 2;">
-        <label>Observaciones</label>
-        <textarea name="observaciones"></textarea>
-    </div>
-
-    <div>
-        <label>Número de orden</label>
-        <input name="numero_orden">
-    </div>
-
-</div>
-
-<button class="btn-guardar">Guardar</button>
-
-</form>
-
+        <button type="submit" class="btn-guardar">Guardar Incapacidad</button>
+    </form>
 </div>
 
 <script>
@@ -224,6 +148,5 @@ document.getElementById('usuarioSelect').addEventListener('change', function () 
     document.getElementById('area').value = option.dataset.area || "";
 });
 </script>
-
 </body>
 </html>
