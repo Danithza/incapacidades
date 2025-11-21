@@ -1,0 +1,73 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f5f7fa;
+    margin: 0;
+    padding: 20px;
+}
+
+h2 {
+    margin-bottom: 15px;
+    color: #003366;
+}
+
+/* BOTÓN GENERAL */
+.btn {
+    padding: 10px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: white;
+    font-weight: bold;
+    display: inline-block;
+    margin-bottom: 15px;
+}
+.btn-primary { background: #007bff; }
+.btn-warning { background: #ffc107; }
+.btn-danger { background: #dc3545; }
+.btn:hover { opacity: 0.8; }
+
+/* TARJETAS PARA FORMULARIOS */
+.card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0px 2px 8px rgba(0,0,0,0.15);
+    margin-top: 20px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2,1fr);
+    gap: 15px;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+/* TABLA */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 25px;
+}
+
+th {
+    background: #003366;
+    color: white;
+    padding: 10px;
+}
+
+td {
+    background: white;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* ACCIONES */
+.acciones {
+    display: flex;
+    gap: 8px;
+}
