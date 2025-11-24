@@ -92,5 +92,32 @@ class IncapacidadesController {
     $stmt = $this->pdo->query("SELECT id, nombre_completo, cedula, area FROM usuarios ORDER BY nombre_completo ASC");
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function update($id, $data) {
+    $sql = "UPDATE incapacidades SET 
+                numero_incapacidad = :numero_incapacidad,
+                mes = :mes,
+                nombre_empleado = :nombre_empleado,
+                cedula = :cedula,
+                area = :area,
+                numero_orden = :numero_orden,
+                cod_diagnostico = :cod_diagnostico,
+                diagnostico = :diagnostico,
+                tipo_incapacidad = :tipo_incapacidad,
+                eps_arl = :eps_arl,
+                inicio = :inicio,
+                termina = :termina,
+                dias_incapacidad = :dias_incapacidad,
+                dias_a_cargo_entidad = :dias_a_cargo_entidad,
+                valor = :valor,
+                observaciones = :observaciones,
+                estado = :estado,
+                fecha_finalizacion = :fecha_finalizacion
+            WHERE id = :id";
+
+    $stmt = $this->pdo->prepare($sql);
+    return $stmt->execute($data + ["id" => $id]);
+}
+
 }
 

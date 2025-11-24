@@ -28,7 +28,6 @@ $fecha_actualizacion = date("Y-m-d H:i:s");
         <th>Cédula</th>
         <th>Cód Diagnóstico</th>
         <th>N° Incapacidad</th>
-        <th>Área</th>
         <th>Estado</th>
         <?php foreach ($fasesDefinidas as $f): ?>
           <th><?= htmlspecialchars($f) ?></th>
@@ -47,7 +46,6 @@ $fecha_actualizacion = date("Y-m-d H:i:s");
           <td><?= htmlspecialchars($inc['cedula']) ?></td>
           <td><?= htmlspecialchars($inc['cod_diagnostico']) ?></td>
           <td><?= htmlspecialchars($inc['numero_incapacidad']) ?></td>
-          <td><?= htmlspecialchars($inc['area']) ?></td>
 
           <!-- Círculo de estado -->
           <td>
