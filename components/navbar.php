@@ -325,7 +325,6 @@
             <a href="../views/dashboard.php" class="active">
                 <span class="menu-icon">📊</span>
                 <span class="menu-text">Dashboard</span>
-                <span class="menu-badge">5</span>
             </a>
             <a href="../views/listado_incapacidades.php">
                 <span class="menu-icon">📋</span>
@@ -334,7 +333,6 @@
             <a href="../views/seguimiento.php">
                 <span class="menu-icon">📍</span>
                 <span class="menu-text">Seguimiento</span>
-                <span class="menu-badge">3</span>
             </a>
             <a href="../views/historial.php">
                 <span class="menu-icon">📚</span>
@@ -348,21 +346,8 @@
                 <span class="menu-icon">📈</span>
                 <span class="menu-text">Reportes</span>
             </a>
-            <a href="../views/configuracion.php">
-                <span class="menu-icon">⚙️</span>
-                <span class="menu-text">Configuración</span>
-            </a>
         </div>
         
-        <div class="sidebar-footer">
-            <div class="user-info">
-                <div class="user-avatar">U</div>
-                <div class="user-details">
-                    <h4>Usuario Administrador</h4>
-                    <p>Último acceso: Hoy</p>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Overlay -->

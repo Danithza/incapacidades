@@ -6,44 +6,83 @@ require_once __DIR__ . '/../config/db.php';
 $controller = new HistorialController($pdo);
 $historial = $controller->obtenerHistorial();
 
-// Datos para las tarjetas de resumen (simulados - deberías reemplazar con datos reales)
+// Datos reales de la base de datos
 $totalIncapacidades = count($historial);
 $incapacidadesActivas = array_filter($historial, function($h) {
-    return $h['estado_proceso'] === 'Activo';
+    return isset($h['estado_proceso']) && $h['estado_proceso'] === 'Activo';
 });
 $totalActivas = count($incapacidadesActivas);
 $totalValor = array_sum(array_column($historial, 'valor'));
 $promedioDias = $totalIncapacidades > 0 ? 
     array_sum(array_column($historial, 'dias_incapacidad')) / $totalIncapacidades : 0;
+
+// Datos reales para gráficos
+// Tipos de incapacidad reales
+$tiposIncapacidad = [];
+foreach ($historial as $h) {
+    if (isset($h['tipo_incapacidad'])) {
+        $tipo = $h['tipo_incapacidad'];
+        $tiposIncapacidad[$tipo] = ($tiposIncapacidad[$tipo] ?? 0) + 1;
+    }
+}
+
+// Áreas reales
+$areasCount = [];
+foreach ($historial as $h) {
+    if (isset($h['area']) && !empty($h['area'])) {
+        $area = $h['area'];
+        $areasCount[$area] = ($areasCount[$area] ?? 0) + 1;
+    }
+}
+arsort($areasCount); // Ordenar de mayor a menor
+
+// Estados reales
+$estadosCount = [];
+foreach ($historial as $h) {
+    if (isset($h['estado_proceso'])) {
+        $estado = $h['estado_proceso'];
+        $estadosCount[$estado] = ($estadosCount[$estado] ?? 0) + 1;
+    }
+}
+
+// Incapacidades por mes (últimos 6 meses)
+$meses = [];
+for ($i = 5; $i >= 0; $i--) {
+    $mes = date('Y-m', strtotime("-$i months"));
+    $meses[$mes] = 0;
+}
+
+foreach ($historial as $h) {
+    if (isset($h['inicio'])) {
+        $mesInicio = date('Y-m', strtotime($h['inicio']));
+        if (isset($meses[$mesInicio])) {
+            $meses[$mesInicio]++;
+        }
+    }
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Gestión de Incapacidades</title>
-        <link rel="stylesheet" href="../public/css/dashboard.css">
+    <link rel="stylesheet" href="../public/css/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="dashboard-container">
         <!-- Header del Dashboard -->
         <div class="dashboard-header">
             <h1>Dashboard de Incapacidades</h1>
-            <div class="header-actions">
-                <button class="btn btn-primary" id="btnExport">
-                    <i class="icon-download"></i> Exportar Reporte
-                </button>
-                <button class="btn btn-secondary" id="btnRefresh">
-                    <i class="icon-refresh"></i> Actualizar
-                </button>
-            </div>
         </div>
 
         <!-- Tarjetas de Resumen -->
         <div class="summary-cards">
             <div class="card card-primary">
                 <div class="card-icon">
-                    <i class="icon-document"></i>
+                    📄
                 </div>
                 <div class="card-content">
                     <h3><?= $totalIncapacidades ?></h3>
@@ -53,7 +92,7 @@ $promedioDias = $totalIncapacidades > 0 ?
 
             <div class="card card-warning">
                 <div class="card-icon">
-                    <i class="icon-active"></i>
+                    🟢
                 </div>
                 <div class="card-content">
                     <h3><?= $totalActivas ?></h3>
@@ -63,7 +102,7 @@ $promedioDias = $totalIncapacidades > 0 ?
 
             <div class="card card-success">
                 <div class="card-icon">
-                    <i class="icon-money"></i>
+                    💰
                 </div>
                 <div class="card-content">
                     <h3>$<?= number_format($totalValor, 0, ',', '.') ?></h3>
@@ -73,7 +112,7 @@ $promedioDias = $totalIncapacidades > 0 ?
 
             <div class="card card-info">
                 <div class="card-icon">
-                    <i class="icon-calendar"></i>
+                    📅
                 </div>
                 <div class="card-content">
                     <h3><?= number_format($promedioDias, 1) ?></h3>
@@ -82,27 +121,26 @@ $promedioDias = $totalIncapacidades > 0 ?
             </div>
         </div>
 
-        <!-- Gráficos y Estadísticas -->
+        <!-- Estadísticas Principales -->
         <div class="dashboard-content">
             <div class="row">
                 <div class="col-md-8">
                     <div class="chart-container">
                         <div class="chart-header">
-                            <h3>Incapacidades por Mes</h3>
-                            <select id="chartPeriod" class="form-select">
-                                <option value="3m">Últimos 3 meses</option>
-                                <option value="6m">Últimos 6 meses</option>
-                                <option value="1y">Último año</option>
-                            </select>
+                            <h3>Incapacidades por Mes (Últimos 6 meses)</h3>
                         </div>
-                        <canvas id="incapacityChart"></canvas>
+                        <canvas id="incapacityChart" height="250"></canvas>
                     </div>
                 </div>
 
                 <div class="col-md-4">
                     <div class="stats-container">
                         <h3>Distribución por Tipo</h3>
-                        <canvas id="typeChart"></canvas>
+                        <?php if (!empty($tiposIncapacidad)): ?>
+                            <canvas id="typeChart" height="250"></canvas>
+                        <?php else: ?>
+                            <p class="no-data">No hay datos de tipos de incapacidad</p>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -110,124 +148,130 @@ $promedioDias = $totalIncapacidades > 0 ?
             <div class="row">
                 <div class="col-md-6">
                     <div class="stats-container">
-                        <h3>Top Áreas con Más Incapacidades</h3>
-                        <div id="areasChart"></div>
+                        <h3>Top 5 Áreas con Más Incapacidades</h3>
+                        <?php if (!empty($areasCount)): ?>
+                            <div class="areas-list">
+                                <?php 
+                                $topAreas = array_slice($areasCount, 0, 5);
+                                $totalAreas = array_sum($areasCount);
+                                foreach ($topAreas as $area => $count): 
+                                    $porcentaje = ($totalAreas > 0) ? ($count / $totalAreas * 100) : 0;
+                                ?>
+                                    <div class="area-item">
+                                        <div class="area-info">
+                                            <span class="area-name"><?= htmlspecialchars($area) ?></span>
+                                            <span class="area-count"><?= $count ?> (<?= number_format($porcentaje, 1) ?>%)</span>
+                                        </div>
+                                        <div class="area-bar">
+                                            <div class="area-bar-fill" style="width: <?= $porcentaje ?>%"></div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <p class="no-data">No hay datos de áreas</p>
+                        <?php endif; ?>
                     </div>
                 </div>
 
                 <div class="col-md-6">
                     <div class="stats-container">
                         <h3>Estado de Procesos</h3>
-                        <div id="statusChart"></div>
+                        <?php if (!empty($estadosCount)): ?>
+                            <div class="status-grid">
+                                <?php foreach ($estadosCount as $estado => $count): 
+                                    $class = strtolower(str_replace(' ', '-', $estado));
+                                ?>
+                                    <div class="status-item">
+                                        <span class="status-badge status-<?= $class ?>">
+                                            <?= $estado ?>
+                                        </span>
+                                        <span class="status-count"><?= $count ?></span>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <p class="no-data">No hay datos de estados</p>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Tabla de Historial -->
-        <div class="table-section">
-            <div class="section-header">
-                <h2>Historial de Incapacidades</h2>
-                <div class="table-actions">
-                    <input type="text" id="searchInput" placeholder="Buscar..." class="form-control">
-                    <button class="btn btn-outline" id="btnFilter">
-                        <i class="icon-filter"></i> Filtros
-                    </button>
+        <!-- Resumen Rápido -->
+        <div class="quick-summary">
+            <div class="summary-header">
+                <h2>Resumen General</h2>
+            </div>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <h4>Tipo Más Común</h4>
+                    <p>
+                        <?php 
+                        if (!empty($tiposIncapacidad)) {
+                            arsort($tiposIncapacidad);
+                            $tipoMasComun = key($tiposIncapacidad);
+                            echo htmlspecialchars($tipoMasComun) . " (" . reset($tiposIncapacidad) . ")";
+                        } else {
+                            echo "No hay datos";
+                        }
+                        ?>
+                    </p>
                 </div>
-            </div>
-
-            <div class="table-responsive">
-                <table class="data-table" id="historialTable">
-                    <thead>
-                        <tr>
-                            <th data-sort="id">ID</th>
-                            <th data-sort="numero_incapacidad">Número</th>
-                            <th data-sort="nombre_empleado">Empleado</th>
-                            <th data-sort="cedula">Cédula</th>
-                            <th data-sort="area">Área</th>
-                            <th data-sort="tipo_incapacidad">Tipo</th>
-                            <th data-sort="eps_arl">EPS/ARL</th>
-                            <th data-sort="inicio">Inicio</th>
-                            <th data-sort="termina">Termina</th>
-                            <th data-sort="dias_incapacidad">Días</th>
-                            <th data-sort="valor">Valor</th>
-                            <th data-sort="estado_proceso">Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($historial)): ?>
-                            <?php foreach ($historial as $h): ?>
-                                <tr>
-                                    <td><?= $h['id'] ?></td>
-                                    <td><?= $h['numero_incapacidad'] ?></td>
-                                    <td><?= $h['nombre_empleado'] ?></td>
-                                    <td><?= $h['cedula'] ?></td>
-                                    <td><?= $h['area'] ?></td>
-                                    <td>
-                                        <span class="badge badge-type-<?= strtolower(str_replace(' ', '-', $h['tipo_incapacidad'])) ?>">
-                                            <?= $h['tipo_incapacidad'] ?>
-                                        </span>
-                                    </td>
-                                    <td><?= $h['eps_arl'] ?></td>
-                                    <td><?= date('d/m/Y', strtotime($h['inicio'])) ?></td>
-                                    <td><?= date('d/m/Y', strtotime($h['termina'])) ?></td>
-                                    <td><?= $h['dias_incapacidad'] ?></td>
-                                    <td>$<?= number_format($h['valor'], 0, ',', '.') ?></td>
-                                    <td>
-                                        <span class="status-badge status-<?= strtolower($h['estado_proceso']) ?>">
-                                            <?= $h['estado_proceso'] ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn-action btn-view" 
-                                                    data-fases='<?= htmlspecialchars(json_encode($h["fases_json"]), ENT_QUOTES) ?>'
-                                                    title="Ver detalles">
-                                                <i class="icon-eye"></i>
-                                            </button>
-                                            <button class="btn-action btn-edit" title="Editar">
-                                                <i class="icon-edit"></i>
-                                            </button>
-                                            <button class="btn-action btn-delete" title="Eliminar">
-                                                <i class="icon-delete"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="13" class="no-data">No hay registros en el historial</td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Paginación -->
-            <div class="pagination">
-                <button class="btn-pagination" id="prevPage">Anterior</button>
-                <div class="page-numbers" id="pageNumbers"></div>
-                <button class="btn-pagination" id="nextPage">Siguiente</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de Detalles -->
-    <div id="detailModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Detalles de Incapacidad</h3>
-                <span class="close-modal">&times;</span>
-            </div>
-            <div class="modal-body" id="modalBody">
-                <!-- Contenido dinámico -->
+                
+                <div class="summary-item">
+                    <h4>Área con Más Casos</h4>
+                    <p>
+                        <?php 
+                        if (!empty($areasCount)) {
+                            $areaMasCasos = key($areasCount);
+                            echo htmlspecialchars($areaMasCasos) . " (" . reset($areasCount) . ")";
+                        } else {
+                            echo "No hay datos";
+                        }
+                        ?>
+                    </p>
+                </div>
+                
+                <div class="summary-item">
+                    <h4>Mes con Más Casos</h4>
+                    <p>
+                        <?php 
+                        if (!empty($meses)) {
+                            arsort($meses);
+                            $mesMasCasos = key($meses);
+                            echo date('F Y', strtotime($mesMasCasos)) . " (" . reset($meses) . ")";
+                        } else {
+                            echo "No hay datos";
+                        }
+                        ?>
+                    </p>
+                </div>
+                
+                <div class="summary-item">
+                    <h4>Valor Promedio por Incapacidad</h4>
+                    <p>$<?= $totalIncapacidades > 0 ? number_format($totalValor / $totalIncapacidades, 0, ',', '.') : 0 ?></p>
+                </div>
             </div>
         </div>
     </div>
 
     <script src="../public/js/dashboard.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        // Datos para gráficos desde PHP
+        window.chartData = {
+            meses: <?= json_encode(array_keys($meses)) ?>,
+            incapacidadesPorMes: <?= json_encode(array_values($meses)) ?>,
+            tiposIncapacidad: <?= json_encode($tiposIncapacidad) ?>
+        };
+        
+        // Inicializar dashboard después de definir chartData
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof Dashboard !== 'undefined') {
+                new Dashboard();
+            }
+        });
+    </script>
 </body>
 </html>

@@ -1,9 +1,15 @@
 <?php 
 require_once "../config/db.php";
+include __DIR__ . '/../components/navbar.php';
 require_once "../controllers/IncapacidadesController.php";
 
 $controller = new IncapacidadesController($pdo);
+
+// Usuarios
 $usuarios = $controller->obtenerUsuarios();
+
+// Diagnósticos
+$diagnosticos = $controller->obtenerDiagnosticos();
 ?>
 
 <!DOCTYPE html>
@@ -26,6 +32,8 @@ $usuarios = $controller->obtenerUsuarios();
 
     <form id="formIncapacidad" action="../actions/guardar_incapacidad.php" method="POST">
         <div class="grid">
+
+            <!-- MES -->
             <div class="form-group">
                 <label>Mes</label>
                 <select name="mes" required>
@@ -39,62 +47,79 @@ $usuarios = $controller->obtenerUsuarios();
                 </select>
             </div>
 
+            <!-- No INCAPACIDAD -->
             <div class="form-group">
                 <label>Número incapacidad</label>
-                <input name="numero_incapacidad" placeholder="Ingrese el número de incapacidad" required>
+                <input name="numero_incapacidad" required placeholder="Ingrese el número de incapacidad">
             </div>
 
+            <!-- EMPLEADO -->
             <div class="form-group">
                 <label>Nombre del empleado</label>
                 <select id="usuarioSelect" name="nombre_empleado" required>
                     <option value="">Seleccione un empleado...</option>
                     <?php foreach ($usuarios as $u): ?>
-                        <option value="<?= htmlspecialchars($u['nombre_completo']) ?>" 
-                                data-cedula="<?= htmlspecialchars($u['cedula']) ?>" 
-                                data-area="<?= htmlspecialchars($u['area']) ?>">
+                        <option value="<?= htmlspecialchars($u['nombre_completo']) ?>"
+                            data-cedula="<?= htmlspecialchars($u['cedula']) ?>"
+                            data-area="<?= htmlspecialchars($u['area']) ?>">
                             <?= htmlspecialchars($u['nombre_completo']) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
             </div>
 
+            <!-- CEDULA -->
             <div class="form-group">
                 <label>Cédula</label>
-                <input type="text" id="cedula" name="cedula" readonly required placeholder="Se completará automáticamente">
+                <input id="cedula" name="cedula" readonly required placeholder="Se completará automáticamente">
             </div>
 
+            <!-- AREA -->
             <div class="form-group">
                 <label>Área</label>
-                <input type="text" id="area" name="area" readonly required placeholder="Se completará automáticamente">
+                <input id="area" name="area" readonly required placeholder="Se completará automáticamente">
             </div>
 
+            <!-- ORDEN -->
             <div class="form-group">
                 <label>Número de orden</label>
                 <input name="numero_orden" placeholder="Número de orden (opcional)">
             </div>
 
+            <!-- COD DIAGNOSTICO -->
             <div class="form-group">
                 <label>Código diagnóstico</label>
-                <input name="cod_diagnostico" placeholder="Código del diagnóstico (opcional)">
+                <select id="codDiagnostico" name="cod_diagnostico">
+                    <option value="">Seleccione un diagnóstico...</option>
+                    <?php foreach ($diagnosticos as $d): ?>
+                        <option value="<?= htmlspecialchars($d['cod_diagnostico']) ?>"
+                            data-diagnostico="<?= htmlspecialchars($d['diagnostico']) ?>">
+                            <?= htmlspecialchars($d['cod_diagnostico']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
 
+            <!-- DIAGNOSTICO -->
             <div class="form-group">
                 <label>Diagnóstico</label>
-                <textarea name="diagnostico" placeholder="Descripción del diagnóstico (opcional)"></textarea>
+                <textarea id="diagnosticoTxt" name="diagnostico" placeholder="Se llenará automáticamente"></textarea>
             </div>
 
+            <!-- TIPO -->
             <div class="form-group">
                 <label>Tipo incapacidad</label>
-                <select id="tipoIncapacidad" name="tipo_incapacidad" required>
+                <select name="tipo_incapacidad" required>
                     <option value="">Seleccione el tipo...</option>
                     <option value="ORIGEN COMUN">ORIGEN COMUN</option>
                     <option value="ORIGEN LABORAL">ORIGEN LABORAL</option>
                 </select>
             </div>
 
+            <!-- EPS -->
             <div class="form-group">
                 <label>EPS / ARL</label>
-                <select id="epsArl" name="eps_arl" required>
+                <select name="eps_arl" required>
                     <option value="">Seleccione EPS/ARL...</option>
                     <option value="COLMENA SAS">COLMENA SAS</option>
                     <option value="NUEVA EPS">NUEVA EPS</option>
@@ -108,45 +133,55 @@ $usuarios = $controller->obtenerUsuarios();
 
             <div class="form-group">
                 <label>Fecha inicio</label>
-                <input type="date" name="inicio" id="fechaInicio" required>
+                <input type="date" name="inicio" required>
             </div>
 
             <div class="form-group">
                 <label>Fecha fin</label>
-                <input type="date" name="termina" id="fechaFin" required>
+                <input type="date" name="termina" required>
             </div>
 
             <div class="form-group">
                 <label>Días incapacidad</label>
-                <input type="number" name="dias_incapacidad" id="diasIncapacidad" min="1" required placeholder="0">
+                <input type="number" id="diasIncapacidad" name="dias_incapacidad" min="1" required>
             </div>
 
             <div class="form-group">
                 <label>Días a cargo entidad</label>
-                <input type="number" name="dias_a_cargo_entidad" id="diasCargoEntidad" min="0" required placeholder="0">
+                <input type="number" id="diasCargoEntidad" name="dias_a_cargo_entidad" min="0" required>
             </div>
 
             <div class="form-group">
                 <label>Valor</label>
-                <input type="number" step="0.01" name="valor" placeholder="0.00">
+                <input type="number" step="0.01" name="valor">
             </div>
 
             <div class="form-group full-width">
                 <label>Observaciones</label>
-                <textarea name="observaciones" placeholder="Observaciones adicionales..."></textarea>
+                <textarea name="observaciones"></textarea>
             </div>
+
         </div>
 
         <button type="submit" class="btn-guardar">Guardar Incapacidad</button>
+
     </form>
 </div>
 
 <script>
+// AUTOLLENAR USUARIO
 document.getElementById('usuarioSelect').addEventListener('change', function () {
     let option = this.options[this.selectedIndex];
     document.getElementById('cedula').value = option.dataset.cedula || "";
     document.getElementById('area').value = option.dataset.area || "";
 });
+
+// AUTOLLENAR DIAGNOSTICO
+document.getElementById('codDiagnostico').addEventListener('change', function () {
+    let option = this.options[this.selectedIndex];
+    document.getElementById('diagnosticoTxt').value = option.dataset.diagnostico || "";
+});
 </script>
+
 </body>
 </html>

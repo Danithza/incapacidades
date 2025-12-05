@@ -13,91 +13,153 @@ $fecha_actualizacion = date("Y-m-d H:i:s");
 <html lang="es">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Seguimiento de Incapacidades</title>
   <link rel="stylesheet" href="/incapacidades/public/css/seguimiento.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body>
 <div class="container">
-  <h2>Seguimiento de Incapacidades</h2>
-  <p class="fecha-actualizacion">Última actualización: <strong><?= htmlspecialchars($fecha_actualizacion) ?></strong></p>
+  <div class="header">
+    <h2>Seguimiento de Incapacidades</h2>
+    <p class="fecha-actualizacion">Última actualización: <strong><?= htmlspecialchars($fecha_actualizacion) ?></strong></p>
+  </div>
 
-  <table class="tabla">
-    <thead>
-      <tr>
-        <th>Trabajador</th>
-        <th>Cédula</th>
-        <th>Cód Diagnóstico</th>
-        <th>N° Incapacidad</th>
-        <th>Estado</th>
-        <?php foreach ($fasesDefinidas as $f): ?>
-          <th><?= htmlspecialchars($f) ?></th>
-        <?php endforeach; ?>
-      </tr>
-    </thead>
-
-    <tbody>
-      <?php foreach ($incapacidades as $inc): ?>
-        <?php 
-          $estado = $inc['estado'] ?? 0;
-          $color = ($estado == 1) ? 'verde' : 'rojo';
-        ?>
+  <div class="table-responsive">
+    <table class="tabla">
+      <thead>
         <tr>
-          <td><?= htmlspecialchars($inc['nombre_empleado']) ?></td>
-          <td><?= htmlspecialchars($inc['cedula']) ?></td>
-          <td><?= htmlspecialchars($inc['cod_diagnostico']) ?></td>
-          <td><?= htmlspecialchars($inc['numero_incapacidad']) ?></td>
-
-          <!-- Círculo de estado -->
-          <td>
-            <span 
-              class="estado-circle <?= $color ?>"
-              data-id="<?= $inc['id'] ?>"      
-              data-estado="<?= $estado ?>"
-              style="cursor:pointer; display:inline-block; width:18px; height:18px; border-radius:50%; background:<?= ($estado==1?'#28a745':'#dc3545') ?>;">
-            </span>
-          </td>
-
-          <!-- Fases -->
+          <th>Trabajador</th>
+          <th>Cédula</th>
+          <th>Cód Diagnóstico</th>
+          <th>N° Incapacidad</th>
+          <th>Estado</th>
           <?php foreach ($fasesDefinidas as $f): ?>
-            <?php $fase = $inc['fases'][$f] ?? null; ?>
-            <td class="celda-fase">
-              <div class="fase-body">
-                <div class="fase-desc"><?= htmlspecialchars($fase['descripcion'] ?? '') ?></div>
-                <?php if (!empty($fase['fecha_actualizacion'])): ?>
-                  <small class="fecha"><?= htmlspecialchars($fase['fecha_actualizacion']) ?></small>
-                <?php endif; ?>
-                <div class="fase-actions">
-                  <button class="btn btn-edit" data-incapacidad="<?= $inc['id'] ?>" data-fase="<?= htmlspecialchars($f) ?>">✏ Editar</button>
-                  <?php if (!empty($fase['evidencia'])): ?>
-                    <a class="btn btn-file" href="/incapacidades/uploads/fases/<?= rawurlencode($fase['evidencia']) ?>" target="_blank">📎 Ver evidencia</a>
-                  <?php else: ?>
-                    <span class="text-muted">Sin evidencia</span>
-                  <?php endif; ?>
-                </div>
-              </div>
-            </td>
+            <th><?= htmlspecialchars($f) ?></th>
           <?php endforeach; ?>
         </tr>
-      <?php endforeach; ?>
-    </tbody>
-  </table>
+      </thead>
+
+      <tbody>
+        <?php foreach ($incapacidades as $inc): ?>
+          <?php 
+            $estado = $inc['estado'] ?? 0;
+            $color = ($estado == 1) ? 'verde' : 'rojo';
+            $estado_texto = ($estado == 1) ? 'Activa' : 'Inactiva';
+          ?>
+          <tr>
+            <td class="empleado-nombre"><?= htmlspecialchars($inc['nombre_empleado']) ?></td>
+            <td class="empleado-cedula"><?= htmlspecialchars($inc['cedula']) ?></td>
+            <td class="diagnostico"><?= htmlspecialchars($inc['cod_diagnostico']) ?></td>
+            <td class="incapacidad-num"><?= htmlspecialchars($inc['numero_incapacidad']) ?></td>
+
+            <!-- Círculo de estado -->
+            <td class="estado-cell">
+              <div class="estado-container">
+                <span 
+                  class="estado-circle <?= $color ?>"
+                  data-id="<?= $inc['id'] ?>"      
+                  data-estado="<?= $estado ?>"
+                  title="<?= $estado_texto ?>">
+                </span>
+                <span class="estado-text"><?= $estado_texto ?></span>
+              </div>
+            </td>
+
+            <!-- Fases -->
+            <?php foreach ($fasesDefinidas as $f): ?>
+              <?php $fase = $inc['fases'][$f] ?? null; ?>
+              <td class="celda-fase">
+                <div class="fase-card <?= empty($fase['descripcion']) ? 'empty' : '' ?>">
+                  <div class="fase-content">
+                    <div class="fase-desc"><?= !empty($fase['descripcion']) ? htmlspecialchars($fase['descripcion']) : 'Sin información' ?></div>
+                    <?php if (!empty($fase['fecha_actualizacion'])): ?>
+                      <div class="fase-footer">
+                        <span class="fecha">
+                          <i class="material-icons icon-small">calendar_today</i>
+                          <?= htmlspecialchars($fase['fecha_actualizacion']) ?>
+                        </span>
+                      </div>
+                    <?php endif; ?>
+                  </div>
+                  <div class="fase-actions">
+                    <button class="btn btn-edit" data-incapacidad="<?= $inc['id'] ?>" data-fase="<?= htmlspecialchars($f) ?>">
+                      <i class="material-icons">edit</i>
+                      <span>Editar</span>
+                    </button>
+                    <?php if (!empty($fase['evidencia'])): ?>
+                      <a class="btn btn-file" href="/incapacidades/uploads/fases/<?= rawurlencode($fase['evidencia']) ?>" target="_blank">
+                        <i class="material-icons">attach_file</i>
+                        <span>Ver</span>
+                      </a>
+                    <?php else: ?>
+                      <span class="no-evidencia">
+                        <i class="material-icons">remove_circle_outline</i>
+                        Sin evidencia
+                      </span>
+                    <?php endif; ?>
+                  </div>
+                </div>
+              </td>
+            <?php endforeach; ?>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <!-- Modal Editar Fase -->
-<div id="modalFase" class="modal" style="display:none;">
-  <div class="modal-content">
-    <span id="modalClose" class="modal-close">&times;</span>
-    <h3 id="modalTitle">Editar fase</h3>
-    <form id="formFase" enctype="multipart/form-data">
-      <input type="hidden" name="incapacidad_id" id="incapacidad_id">
-      <input type="hidden" name="nombre_fase" id="nombre_fase">
-      <label>Descripción</label>
-      <textarea name="descripcion" id="descripcion" rows="4"></textarea>
-      <label>Evidencia (pdf/jpg/png)</label>
-      <input type="file" name="evidencia" id="evidencia">
-      <div id="existingEvidencia"></div>
-      <button type="submit" class="btn btn-save">Guardar</button>
-    </form>
+<div id="modalFase" class="modal">
+  <div class="modal-overlay"></div>
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3 class="modal-title">
+        <i class="material-icons">edit_document</i>
+        <span id="modalTitle">Editar Fase</span>
+      </h3>
+      <button id="modalClose" class="modal-close">
+        <i class="material-icons">close</i>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <form id="formFase" class="modal-form" enctype="multipart/form-data">
+        <input type="hidden" name="incapacidad_id" id="incapacidad_id">
+        <input type="hidden" name="nombre_fase" id="nombre_fase">
+        
+        <div class="form-group">
+          <label for="descripcion" class="form-label">
+            <i class="material-icons icon-label">description</i>
+            Descripción
+          </label>
+          <textarea name="descripcion" id="descripcion" rows="5" class="form-textarea" 
+                    placeholder="Ingrese la descripción de la fase..."></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="evidencia" class="form-label">
+            <i class="material-icons icon-label">attach_file</i>
+            Evidencia (PDF, JPG, PNG)
+          </label>
+          <div class="file-input-container">
+            <input type="file" name="evidencia" id="evidencia" class="form-file" 
+                   accept=".pdf,.jpg,.jpeg,.png">
+            <div class="file-info" id="fileInfo">No se ha seleccionado ningún archivo</div>
+          </div>
+        </div>
+        
+        <div id="existingEvidencia" class="existing-file"></div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnCancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="material-icons">save</i>
+            Guardar Cambios
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 

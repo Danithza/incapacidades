@@ -420,17 +420,151 @@ body {
     padding: 40px;
 }
 
-/* Iconos (usando Unicode como ejemplo) */
-.icon-download::before { content: "📥"; }
-.icon-refresh::before { content: "🔄"; }
-.icon-document::before { content: "📄"; }
-.icon-active::before { content: "🟢"; }
-.icon-money::before { content: "💰"; }
-.icon-calendar::before { content: "📅"; }
-.icon-filter::before { content: "🔍"; }
-.icon-eye::before { content: "👁️"; }
-.icon-edit::before { content: "✏️"; }
-.icon-delete::before { content: "🗑️"; }
+/* Estilos adicionales para el nuevo dashboard */
+
+/* Lista de áreas */
+.areas-list {
+    margin-top: 20px;
+}
+
+.area-item {
+    margin-bottom: 15px;
+}
+
+.area-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+.area-name {
+    font-weight: 500;
+}
+
+.area-count {
+    color: var(--text-light);
+}
+
+.area-bar {
+    height: 8px;
+    background-color: var(--light-gray);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.area-bar-fill {
+    height: 100%;
+    background-color: var(--primary-color);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+/* Grid de estados */
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.status-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px;
+    background-color: var(--light-gray);
+    border-radius: 8px;
+    transition: transform 0.3s ease;
+}
+
+.status-item:hover {
+    transform: translateY(-2px);
+}
+
+.status-count {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-top: 10px;
+    color: var(--primary-color);
+}
+
+/* Resumen rápido */
+.quick-summary {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: var(--shadow);
+    margin-top: 20px;
+}
+
+.summary-header {
+    margin-bottom: 25px;
+}
+
+.summary-header h2 {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.summary-item {
+    padding: 20px;
+    background-color: var(--light-gray);
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.summary-item h4 {
+    color: var(--text-light);
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.summary-item p {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--dark-gray);
+}
+
+/* Estados adicionales */
+.status-pendiente { 
+    background-color: #fff3e0; 
+    color: #f57c00; 
+}
+
+.status-cerrado { 
+    background-color: #f5f5f5; 
+    color: #757575; 
+}
+
+.status-aprobado { 
+    background-color: #e8f5e8; 
+    color: #2e7d32; 
+}
+
+.status-rechazado { 
+    background-color: #ffebee; 
+    color: #d32f2f; 
+}
+
+/* Tipos de incapacidad adicionales */
+.badge-type-origen-comun { 
+    background-color: #e3f2fd; 
+    color: #1976d2; 
+}
+
+.badge-type-accidente-laboral { 
+    background-color: #fff3e0; 
+    color: #f57c00; 
+}
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -474,4 +608,28 @@ body {
     .action-buttons {
         flex-direction: column;
     }
+    
+    .status-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .summary-item {
+        padding: 15px;
+    }
 }
+
+/* Iconos (usando Unicode como ejemplo) */
+.icon-download::before { content: "📥"; }
+.icon-refresh::before { content: "🔄"; }
+.icon-document::before { content: "📄"; }
+.icon-active::before { content: "🟢"; }
+.icon-money::before { content: "💰"; }
+.icon-calendar::before { content: "📅"; }
+.icon-filter::before { content: "🔍"; }
+.icon-eye::before { content: "👁️"; }
+.icon-edit::before { content: "✏️"; }
+.icon-delete::before { content: "🗑️"; }

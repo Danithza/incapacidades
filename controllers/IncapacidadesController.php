@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/db.php';
 
-
 class IncapacidadesController {
 
     private $pdo;
@@ -10,23 +9,21 @@ class IncapacidadesController {
         $this->pdo = $pdo;
     }
 
-    // LISTADO
     public function getAll(){
         $sql = "SELECT * FROM incapacidades ORDER BY id DESC";
         return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getAllWithFases() {
-    $sql = "SELECT i.*, f.nombre_fase 
-            FROM incapacidades i
-            LEFT JOIN fases f ON f.incapacidad_id = i.id
-            ORDER BY i.id DESC, f.id ASC";
+        $sql = "SELECT i.*, f.nombre_fase 
+                FROM incapacidades i
+                LEFT JOIN fases f ON f.incapacidad_id = i.id
+                ORDER BY i.id DESC, f.id ASC";
 
-    $stmt = $this->pdo->query($sql);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $this->pdo->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // GUARDAR → TABLA incapacidades + TABLA fases (5 por defecto)
     public function store($data){
         $sql = "INSERT INTO incapacidades (
             numero_incapacidad, mes, nombre_empleado, cedula, area, cod_diagnostico,
@@ -61,7 +58,6 @@ class IncapacidadesController {
 
         $id = $this->pdo->lastInsertId();
 
-        // CREAR LAS 5 FASES
         $fases = ["RADICADO", "SIN RADICAR", "RESPUESTA EPS", "PAGO", "FINALIZADO"];
 
         $sqlF = "INSERT INTO fases (incapacidad_id, nombre_fase) VALUES (?,?)";
@@ -73,7 +69,6 @@ class IncapacidadesController {
         return $id;
     }
 
-    // OBTENER UNA INCAPACIDAD
     public function find($id){
         $sql = "SELECT * FROM incapacidades WHERE id = ?";
         $stmt = $this->pdo->prepare($sql);
@@ -81,7 +76,6 @@ class IncapacidadesController {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // ELIMINAR
     public function delete($id){
         $sql = "DELETE FROM incapacidades WHERE id = ?";
         $stmt = $this->pdo->prepare($sql);
@@ -89,12 +83,18 @@ class IncapacidadesController {
     }
 
     public function obtenerUsuarios() {
-    $stmt = $this->pdo->query("SELECT id, nombre_completo, cedula, area FROM usuarios ORDER BY nombre_completo ASC");
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $this->pdo->query("SELECT id, nombre_completo, cedula, area FROM usuarios ORDER BY nombre_completo ASC");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // ✅ NUEVO: Obtener diagnósticos
+    public function obtenerDiagnosticos() {
+        $stmt = $this->pdo->query("SELECT cod_diagnostico, diagnostico FROM diagnosticos ORDER BY cod_diagnostico ASC");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function update($id, $data) {
-    $sql = "UPDATE incapacidades SET 
+        $sql = "UPDATE incapacidades SET 
                 numero_incapacidad = :numero_incapacidad,
                 mes = :mes,
                 nombre_empleado = :nombre_empleado,
@@ -115,9 +115,7 @@ class IncapacidadesController {
                 fecha_finalizacion = :fecha_finalizacion
             WHERE id = :id";
 
-    $stmt = $this->pdo->prepare($sql);
-    return $stmt->execute($data + ["id" => $id]);
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute($data + ["id" => $id]);
+    }
 }
-
-}
-
