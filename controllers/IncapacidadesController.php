@@ -92,9 +92,9 @@ class IncapacidadesController {
         $stmt = $this->pdo->query("SELECT cod_diagnostico, diagnostico FROM diagnosticos ORDER BY cod_diagnostico ASC");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+public function update($id, $data) {
 
-    public function update($id, $data) {
-        $sql = "UPDATE incapacidades SET 
+    $sql = "UPDATE incapacidades SET 
                 numero_incapacidad = :numero_incapacidad,
                 mes = :mes,
                 nombre_empleado = :nombre_empleado,
@@ -111,11 +111,14 @@ class IncapacidadesController {
                 dias_a_cargo_entidad = :dias_a_cargo_entidad,
                 valor = :valor,
                 observaciones = :observaciones,
-                estado = :estado,
-                fecha_finalizacion = :fecha_finalizacion
+                estado = :estado     -- 👈 FALTABA
             WHERE id = :id";
 
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute($data + ["id" => $id]);
-    }
+    $stmt = $this->pdo->prepare($sql);
+
+    // Agregamos el id al arreglo
+    $data['id'] = $id;
+
+    return $stmt->execute($data);
+}
 }

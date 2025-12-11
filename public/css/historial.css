@@ -2,11 +2,11 @@
    ESTILOS GENERALES
 ============================ */
 :root {
-    --primary-color: #1a3353;
-    --secondary-color: #4a6bff;
-    --success-color: #28a745;
+    --primary-color: #2c5530;
+    --secondary-color: #4a7c59;
+    --success-color: #38a169;
     --info-color: #4299e1;
-    --warning-color: #ed8936;
+    --warning-color: #d69e2e;
     --danger-color: #e53e3e;
     --light-color: #f7fafc;
     --dark-color: #2d3748;
@@ -45,7 +45,7 @@ body {
 ============================ */
 .header-section {
     padding: 25px 30px;
-    background: linear-gradient(135deg, var(--primary-color) 0%, #2d4a7c 100%);
+    background: linear-gradient(135deg, #2c5530 0%, #3a7d3a 100%);
     color: white;
     display: flex;
     justify-content: space-between;
@@ -65,7 +65,7 @@ body {
 
 .icon-title {
     font-size: 32px;
-    color: #4a6bff;
+    color: #c6f6d5;
 }
 
 .subtitle {
@@ -80,19 +80,19 @@ body {
 }
 
 .stat-card {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.15);
     border-radius: 10px;
     padding: 15px 20px;
     display: flex;
     align-items: center;
     gap: 15px;
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .stat-icon {
     font-size: 28px;
-    color: #4a6bff;
+    color: #c6f6d5;
 }
 
 .stat-info {
@@ -154,7 +154,7 @@ body {
 #searchInput:focus {
     outline: none;
     border-color: var(--secondary-color);
-    box-shadow: 0 0 0 3px rgba(74, 107, 255, 0.1);
+    box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.15);
     background: white;
 }
 
@@ -188,7 +188,7 @@ body {
 }
 
 .historial-table thead {
-    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    background: linear-gradient(135deg, #2c5530 0%, #4a7c59 100%);
 }
 
 .historial-table th {
@@ -197,7 +197,7 @@ body {
     text-align: left;
     font-size: 13px;
     font-weight: 600;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: 1px solid rgba(255, 255, 255, 0.15);
     white-space: nowrap;
     position: relative;
 }
@@ -221,14 +221,14 @@ body {
 .sticky-col {
     position: sticky;
     left: 0;
-    background: #2d3748;
+    background: #2c5530;
     z-index: 10;
 }
 
 .sticky-col-right {
     position: sticky;
     right: 0;
-    background: #2d3748;
+    background: #2c5530;
     z-index: 10;
 }
 
@@ -258,7 +258,7 @@ body {
 }
 
 /* ============================
-   BOTÓN ESTADO VERDE (COMO EN EL CÓDIGO ANTERIOR)
+   BOTÓN ESTADO
 ============================ */
 .estado-container {
     display: flex;
@@ -269,7 +269,7 @@ body {
 
 .btn-estado {
     background: white;
-    border: 2px solid #28a745;
+    border: 2px solid var(--success-color);
     border-radius: 20px;
     padding: 8px 15px;
     display: flex;
@@ -282,25 +282,25 @@ body {
 }
 
 .btn-estado:hover {
-    background: #f8fff9;
+    background: #f0fff4;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.2);
+    box-shadow: 0 4px 8px rgba(56, 161, 105, 0.2);
 }
 
 .estado-circle {
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #28a745;
+    background: var(--success-color);
     display: inline-block;
     border: 2px solid white;
-    box-shadow: 0 0 0 1px #28a745;
+    box-shadow: 0 0 0 1px var(--success-color);
 }
 
 .estado-text {
     font-size: 12px;
     font-weight: 600;
-    color: #28a745;
+    color: var(--success-color);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -333,7 +333,7 @@ body {
 .cedula {
     font-family: 'Courier New', monospace;
     font-weight: 600;
-    background: #f0f5ff;
+    background: #f0fff4;
     padding: 4px 8px;
     border-radius: 4px;
     border-left: 3px solid var(--secondary-color);
@@ -358,7 +358,7 @@ body {
 }
 
 .badge-incapacidad {
-    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+    background: linear-gradient(135deg, #4a7c59 0%, #3a6b4a 100%);
     color: white;
 }
 
@@ -368,12 +368,12 @@ body {
 }
 
 .badge-tipo {
-    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+    background: linear-gradient(135deg, #d69e2e 0%, #b7791f 100%);
     color: white;
 }
 
 .badge-pago {
-    background: linear-gradient(135deg, #38b2ac 0%, #319795 100%);
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
     color: white;
 }
 
@@ -465,15 +465,15 @@ body {
 }
 
 .btn-view-fases {
-    background: linear-gradient(135deg, var(--secondary-color) 0%, #3a56cc 100%);
+    background: linear-gradient(135deg, var(--secondary-color) 0%, #3a6b4a 100%);
     color: white;
     padding: 8px 14px;
 }
 
 .btn-view-fases:hover {
-    background: linear-gradient(135deg, #3a56cc 0%, #2a42aa 100%);
+    background: linear-gradient(135deg, #3a6b4a 0%, #2c5530 100%);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(74, 107, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(74, 124, 89, 0.3);
 }
 
 .btn-info {
@@ -571,7 +571,7 @@ body {
 
 .modal-header {
     padding: 20px 24px;
-    background: linear-gradient(135deg, var(--primary-color) 0%, #2d4a7c 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: white;
     display: flex;
     justify-content: space-between;
@@ -588,7 +588,7 @@ body {
 }
 
 .modal-close {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.15);
     border: none;
     color: white;
     width: 36px;
@@ -602,7 +602,7 @@ body {
 }
 
 .modal-close:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.25);
     transform: rotate(90deg);
 }
 
@@ -666,7 +666,7 @@ body {
     top: 0;
     height: 100%;
     width: 4px;
-    background: linear-gradient(to bottom, var(--secondary-color), #3a56cc);
+    background: linear-gradient(to bottom, var(--secondary-color), var(--primary-color));
 }
 
 .fase-header {
@@ -774,7 +774,7 @@ body {
     padding: 15px;
     background: #f8fafc;
     border-radius: 8px;
-    border-left: 4px solid var(--info-color);
+    border-left: 4px solid var(--secondary-color);
     font-size: 14px;
     line-height: 1.6;
     color: #4a5568;

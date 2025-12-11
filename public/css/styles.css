@@ -1,108 +1,126 @@
-/* styles.css - Estilos mejorados para el formulario */
+/* styles.css - Estilos mejorados y profesionales para el formulario */
+
+/* RESET */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+/* =========================================
+   FONDO GENERAL (contraste con navbar verde)
+========================================= */
 body {
-    background: linear-gradient(135deg, #333 0%, #f8f9fa 100%);
+    background: #f4f6f9; /* Gris claro corporativo */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     padding: 20px;
     min-height: 100vh;
 }
 
+/* TÍTULOS */
 h2 {
-    color: white;
+    color: #1f2937; /* Gris oscuro profesional */
     margin-bottom: 30px;
     text-align: center;
     font-size: 32px;
     font-weight: 300;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
+/* TARJETA PRINCIPAL */
 .card {
-    background: white;
+    background: #ffffff;
     padding: 40px;
-    border-radius: 20px;
+    border-radius: 18px;
     max-width: 1000px;
     margin: 0 auto;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    animation: fadeIn 0.6s ease-out;
 }
 
+/* ENCABEZADO DEL FORMULARIO */
 .form-header {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 25px;
 }
 
 .form-header h2 {
-    color: #333;
-    font-size: 28px;
-    margin-bottom: 10px;
+    color: #2d3748;
+    font-size: 26px;
+    margin-bottom: 8px;
 }
 
 .form-header p {
-    color: #666;
-    font-size: 16px;
+    color: #6b7280;
+    font-size: 15px;
 }
 
+/* GRID DEL FORMULARIO */
 .grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 25px;
-    margin-top: 20px;
+    gap: 22px;
+    margin-top: 15px;
 }
 
+/* FORM GROUP */
 .form-group {
     display: flex;
     flex-direction: column;
+    animation: fadeIn 0.6s ease-out;
 }
+
+.form-group:nth-child(odd) { animation-delay: 0.1s; }
+.form-group:nth-child(even) { animation-delay: 0.2s; }
 
 .form-group label {
     font-weight: 600;
-    color: #333;
-    margin-bottom: 8px;
+    color: #374151;
+    margin-bottom: 6px;
     font-size: 14px;
     display: flex;
     align-items: center;
 }
 
+/* Asterisco de campos requeridos */
 .form-group label::after {
     content: '*';
-    color: #e74c3c;
+    color: #e63946;
     margin-left: 4px;
     font-weight: bold;
 }
 
+/* Los que NO son obligatorios no muestran asterisco */
 .form-group:has(input:not([required])) label::after,
 .form-group:has(select:not([required])) label::after,
 .form-group:has(textarea:not([required])) label::after {
     content: '';
 }
 
+/* CAMPOS */
 input, select, textarea {
     width: 100%;
     padding: 12px 15px;
     border-radius: 10px;
-    border: 2px solid #e1e5e9;
-    transition: all 0.3s ease;
+    border: 2px solid #d1d5db;
+    transition: 0.3s ease;
     font-size: 15px;
-    background: #f8f9fa;
+    background: #f9fafb;
 }
 
+/* FOCUS */
 input:focus, select:focus, textarea:focus {
-    border-color: #3498db;
+    border-color: #2563eb; 
     outline: none;
     background: white;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     transform: translateY(-2px);
 }
 
+/* CAMPOS SOLO LECTURA */
 input[readonly] {
-    background-color: #ecf0f1;
-    color: #7f8c8d;
-    border-color: #bdc3c7;
+    background-color: #e5e7eb;
+    color: #6b7280;
+    border-color: #cbd5e1;
 }
 
 input[readonly]:focus {
@@ -110,21 +128,23 @@ input[readonly]:focus {
     box-shadow: none;
 }
 
+/* TEXTAREA */
 textarea {
     min-height: 100px;
     resize: vertical;
-    font-family: inherit;
 }
 
+/* CAMPOS DE ANCHO COMPLETO */
 .full-width {
     grid-column: span 2;
 }
 
+/* BOTÓN GUARDAR */
 .btn-guardar {
     margin-top: 30px;
     padding: 15px 30px;
     width: 100%;
-    background: linear-gradient(135deg, #3498db, #2980b9);
+    background: #2563eb; /* Azul corporativo */
     color: white;
     border: none;
     border-radius: 10px;
@@ -137,9 +157,9 @@ textarea {
 }
 
 .btn-guardar:hover {
-    background: linear-gradient(135deg, #2980b9, #3498db);
+    background: #1e40af;
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+    box-shadow: 0 5px 15px rgba(30, 64, 175, 0.35);
 }
 
 .btn-guardar:active {
@@ -147,37 +167,36 @@ textarea {
 }
 
 .btn-guardar:disabled {
-    background: #bdc3c7;
+    background: #9ca3af;
     cursor: not-allowed;
     transform: none;
-    box-shadow: none;
 }
 
-/* Estilos para select personalizados */
+/* SELECT CON FLECHITA PERSONALIZADA */
 select {
     appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' stroke='%23333' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
     background-repeat: no-repeat;
     background-position: right 15px center;
-    background-size: 15px;
+    background-size: 16px;
     padding-right: 45px;
 }
 
-/* Estilos para números */
+/* NÚMEROS */
 input[type="number"] {
     font-family: 'Courier New', monospace;
     font-weight: 600;
 }
 
-/* Responsive */
+/* RESPONSIVE */
 @media (max-width: 768px) {
     .grid {
         grid-template-columns: 1fr;
-        gap: 20px;
+        gap: 18px;
     }
     
     .full-width {
-        grid-column: span 1;
+        grid-column: 1 / -1;
     }
     
     .card {
@@ -185,12 +204,8 @@ input[type="number"] {
         margin: 10px;
     }
     
-    body {
-        padding: 10px;
-    }
-    
     h2 {
-        font-size: 24px;
+        font-size: 26px;
     }
 }
 
@@ -205,45 +220,23 @@ input[type="number"] {
     
     .btn-guardar {
         padding: 12px 20px;
-        font-size: 16px;
+        font-size: 15px;
     }
 }
 
-/* Animaciones */
+/* ANIMACIONES */
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.card {
-    animation: fadeIn 0.6s ease-out;
-}
-
-.form-group {
-    animation: fadeIn 0.6s ease-out;
-}
-
-.form-group:nth-child(odd) {
-    animation-delay: 0.1s;
-}
-
-.form-group:nth-child(even) {
-    animation-delay: 0.2s;
-}
-
-/* Estados de validación */
+/* VALIDACIONES */
 input:valid, select:valid, textarea:valid {
-    border-color: #2ecc71;
+    border-color: #16a34a; /* Verde profesional */
 }
 
 input:invalid:not(:focus):not(:placeholder-shown),
 select:invalid:not(:focus),
 textarea:invalid:not(:focus):not(:placeholder-shown) {
-    border-color: #e74c3c;
+    border-color: #e63946; /* Rojo validación */
 }

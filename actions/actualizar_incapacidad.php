@@ -24,7 +24,6 @@ $data = [
     "valor" => $_POST['valor'],
     "observaciones" => $_POST['observaciones'],
     "estado" => $_POST['estado'],
-    "fecha_finalizacion" => $_POST['fecha_finalizacion']
 ];
 
 $controller->update($id, $data);

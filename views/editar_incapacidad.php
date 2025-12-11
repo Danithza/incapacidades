@@ -131,9 +131,6 @@ if (!$incapacidad) {
         <option <?= $incapacidad['estado']=='Finalizado'?'selected':'' ?>>Finalizado</option>
     </select>
 
-    <label>Fecha finalización</label>
-    <input type="date" name="fecha_finalizacion" value="<?= $incapacidad['fecha_finalizacion'] ?>">
-
     <div class="botones">
         <button class="btn guardar" type="submit">Guardar Cambios</button>
         <a href="listado_incapacidades.php" class="btn cancelar">Cancelar</a>

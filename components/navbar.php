@@ -318,7 +318,6 @@
     <!-- Menú Lateral -->
     <div id="sidebar" class="sidebar">
         <div class="sidebar-header">
-            <h2>Menú Principal</h2>
         </div>
         
         <div class="sidebar-menu">

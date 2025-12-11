@@ -14,15 +14,36 @@ $diagnosticos = $controller->obtenerDiagnosticos();
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registrar Incapacidad</title>
     <link rel="stylesheet" href="../public/css/styles.css">
+
+    <!-- SELECT2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <style>
+        /* Para que Select2 combine con tus inputs */
+        .select2-container .select2-selection--single {
+            height: 42px !important;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            top: 8px;
+        }
+    </style>
 </head>
+
 <body>
 
-<h2>Registro de Incapacidad</h2>
+<h2></h2>
 
 <div class="card">
     <div class="form-header">
@@ -59,7 +80,8 @@ $diagnosticos = $controller->obtenerDiagnosticos();
                 <select id="usuarioSelect" name="nombre_empleado" required>
                     <option value="">Seleccione un empleado...</option>
                     <?php foreach ($usuarios as $u): ?>
-                        <option value="<?= htmlspecialchars($u['nombre_completo']) ?>"
+                        <option 
+                            value="<?= htmlspecialchars($u['nombre_completo']) ?>"
                             data-cedula="<?= htmlspecialchars($u['cedula']) ?>"
                             data-area="<?= htmlspecialchars($u['area']) ?>">
                             <?= htmlspecialchars($u['nombre_completo']) ?>
@@ -92,7 +114,8 @@ $diagnosticos = $controller->obtenerDiagnosticos();
                 <select id="codDiagnostico" name="cod_diagnostico">
                     <option value="">Seleccione un diagnóstico...</option>
                     <?php foreach ($diagnosticos as $d): ?>
-                        <option value="<?= htmlspecialchars($d['cod_diagnostico']) ?>"
+                        <option 
+                            value="<?= htmlspecialchars($d['cod_diagnostico']) ?>"
                             data-diagnostico="<?= htmlspecialchars($d['diagnostico']) ?>">
                             <?= htmlspecialchars($d['cod_diagnostico']) ?>
                         </option>
@@ -169,17 +192,30 @@ $diagnosticos = $controller->obtenerDiagnosticos();
 </div>
 
 <script>
-// AUTOLLENAR USUARIO
-document.getElementById('usuarioSelect').addEventListener('change', function () {
-    let option = this.options[this.selectedIndex];
-    document.getElementById('cedula').value = option.dataset.cedula || "";
-    document.getElementById('area').value = option.dataset.area || "";
+// ACTIVAR SELECT2 CON BÚSQUEDA
+$(document).ready(function() {
+    $('#usuarioSelect').select2({
+        placeholder: "Seleccione un empleado...",
+        width: '100%'
+    });
+
+    $('#codDiagnostico').select2({
+        placeholder: "Seleccione un diagnóstico...",
+        width: '100%'
+    });
 });
 
-// AUTOLLENAR DIAGNOSTICO
-document.getElementById('codDiagnostico').addEventListener('change', function () {
-    let option = this.options[this.selectedIndex];
-    document.getElementById('diagnosticoTxt').value = option.dataset.diagnostico || "";
+// AUTOCOMPLETAR EMPLEADO
+$('#usuarioSelect').on('change', function() {
+    let op = this.options[this.selectedIndex];
+    $('#cedula').val(op.dataset.cedula || "");
+    $('#area').val(op.dataset.area || "");
+});
+
+// AUTOCOMPLETAR DIAGNOSTICO
+$('#codDiagnostico').on('change', function() {
+    let op = this.options[this.selectedIndex];
+    $('#diagnosticoTxt').val(op.dataset.diagnostico || "");
 });
 </script>
 

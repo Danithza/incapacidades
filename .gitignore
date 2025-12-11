@@ -1,0 +1,17 @@
+# Composer
+/vendor/
+
+# Archivos subidos por usuarios
+/uploads/
+
+# Configuración sensible
+.env
+*.env
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Logs y cachés
+*.log
+/cache/
