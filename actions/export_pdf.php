@@ -134,7 +134,7 @@ function generarAnalisis($data, $type) {
         // Análisis por EPS
         $porEPS = [];
         foreach ($data as $item) {
-            $eps = $item['eps'] ?? 'Sin EPS';
+            $eps = $item['eps_arl'] ?? 'Sin EPS';
             if (!isset($porEPS[$eps])) {
                 $porEPS[$eps] = 0;
             }
@@ -539,7 +539,6 @@ $html = '
         <strong>Información del Reporte:</strong><br>
         • Fecha de generación: ' . formatearFechaColombia(date('Y-m-d H:i:s')) . '<br>
         • Periodo analizado: Últimos 90 días<br>
-        • Zona horaria: América/Bogotá (GMT-5)<br>
         • Año de referencia: 2025
     </div>
     
