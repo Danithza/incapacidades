@@ -9,8 +9,62 @@ class IncapacidadesController {
         $this->pdo = $pdo;
     }
 
+    // Método original para obtener todos
     public function getAll(){
         $sql = "SELECT * FROM incapacidades ORDER BY id DESC";
+        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // NUEVO: Método con filtros
+    public function getFiltered($fecha = '', $empleado = '', $area = '', $diagnostico = '', $estado = ''){
+        $sql = "SELECT * FROM incapacidades WHERE 1=1";
+        $params = [];
+        
+        if(!empty($fecha)) {
+            $sql .= " AND DATE(inicio) = ?";
+            $params[] = $fecha;
+        }
+        
+        if(!empty($empleado)) {
+            $sql .= " AND nombre_empleado LIKE ?";
+            $params[] = "%$empleado%";
+        }
+        
+        if(!empty($area)) {
+            $sql .= " AND area = ?";
+            $params[] = $area;
+        }
+        
+        if(!empty($diagnostico)) {
+            $sql .= " AND diagnostico = ?";
+            $params[] = $diagnostico;
+        }
+        
+        if(!empty($estado)) {
+            $sql .= " AND estado = ?";
+            $params[] = $estado;
+        }
+        
+        $sql .= " ORDER BY id DESC";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Métodos para obtener valores únicos para los filtros
+    public function getDistinctAreas(){
+        $sql = "SELECT DISTINCT area FROM incapacidades WHERE area IS NOT NULL AND area != '' ORDER BY area";
+        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getDistinctDiagnosticos(){
+        $sql = "SELECT DISTINCT diagnostico FROM incapacidades WHERE diagnostico IS NOT NULL AND diagnostico != '' ORDER BY diagnostico";
+        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getDistinctEstados(){
+        $sql = "SELECT DISTINCT estado FROM incapacidades WHERE estado IS NOT NULL AND estado != '' ORDER BY estado";
         return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -87,38 +141,35 @@ class IncapacidadesController {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // ✅ NUEVO: Obtener diagnósticos
     public function obtenerDiagnosticos() {
         $stmt = $this->pdo->query("SELECT cod_diagnostico, diagnostico FROM diagnosticos ORDER BY cod_diagnostico ASC");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-public function update($id, $data) {
 
-    $sql = "UPDATE incapacidades SET 
-                numero_incapacidad = :numero_incapacidad,
-                mes = :mes,
-                nombre_empleado = :nombre_empleado,
-                cedula = :cedula,
-                area = :area,
-                numero_orden = :numero_orden,
-                cod_diagnostico = :cod_diagnostico,
-                diagnostico = :diagnostico,
-                tipo_incapacidad = :tipo_incapacidad,
-                eps_arl = :eps_arl,
-                inicio = :inicio,
-                termina = :termina,
-                dias_incapacidad = :dias_incapacidad,
-                dias_a_cargo_entidad = :dias_a_cargo_entidad,
-                valor = :valor,
-                observaciones = :observaciones,
-                estado = :estado     -- 👈 FALTABA
-            WHERE id = :id";
+    public function update($id, $data) {
+        $sql = "UPDATE incapacidades SET 
+                    numero_incapacidad = :numero_incapacidad,
+                    mes = :mes,
+                    nombre_empleado = :nombre_empleado,
+                    cedula = :cedula,
+                    area = :area,
+                    numero_orden = :numero_orden,
+                    cod_diagnostico = :cod_diagnostico,
+                    diagnostico = :diagnostico,
+                    tipo_incapacidad = :tipo_incapacidad,
+                    eps_arl = :eps_arl,
+                    inicio = :inicio,
+                    termina = :termina,
+                    dias_incapacidad = :dias_incapacidad,
+                    dias_a_cargo_entidad = :dias_a_cargo_entidad,
+                    valor = :valor,
+                    observaciones = :observaciones,
+                    estado = :estado
+                WHERE id = :id";
 
-    $stmt = $this->pdo->prepare($sql);
+        $stmt = $this->pdo->prepare($sql);
+        $data['id'] = $id;
 
-    // Agregamos el id al arreglo
-    $data['id'] = $id;
-
-    return $stmt->execute($data);
-}
+        return $stmt->execute($data);
+    }
 }

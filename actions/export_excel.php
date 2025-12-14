@@ -26,9 +26,18 @@ use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 ob_clean();
 
 // --------------------------------------------------------------------------------
-// OBTENER TIPO DE REPORTE
+// OBTENER PARÁMETROS DE FILTROS
 // --------------------------------------------------------------------------------
-$type = $_GET['type'] ?? 'incapacidades';
+$fecha = $_GET['fecha'] ?? '';
+$empleado = $_GET['empleado'] ?? '';
+$area = $_GET['area'] ?? '';
+$diagnostico = $_GET['diagnostico'] ?? '';
+$estado = $_GET['estado'] ?? '';
+$accion = $_GET['accion'] ?? '';
+$usuario = $_GET['usuario'] ?? '';
+$estado_proceso = $_GET['estado_proceso'] ?? '';
+$eps_arl = $_GET['eps_arl'] ?? '';
+$type = $_GET['tipo_reporte'] ?? 'incapacidades';
 
 // --------------------------------------------------------------------------------
 // INICIALIZAR CONTROLADORES
@@ -42,7 +51,7 @@ $seg = new SeguimientoController($pdo);
 // --------------------------------------------------------------------------------
 $config = [
     'incapacidades' => [
-        'data' => $inc->getAll(),
+        'data' => $inc->getFiltered($fecha, $empleado, $area, $diagnostico, $estado, $eps_arl),
         'filename' => "Reporte_Incapacidades_" . date('Y-m-d_His') . ".xlsx",
         'title' => "REPORTE DE INCAPACIDADES",
         'subtitles' => [
@@ -60,35 +69,39 @@ $config = [
             'termina' => 'Fecha Fin',
             'dias_incapacidad' => 'Días',
             'estado' => 'Estado',
-            'fecha_registro' => 'Fecha Registro',
-            'eps' => 'EPS',
+            'eps_arl' => 'EPS/ARL',
             'tipo_incapacidad' => 'Tipo'
         ]
     ],
     
     'historial' => [
-        'data' => $hist->obtenerHistorial(),
+        'data' => $hist->getFiltered($fecha, $empleado, $accion, $usuario),
         'filename' => "Reporte_Historial_" . date('Y-m-d_His') . ".xlsx",
-        'title' => "HISTORIAL DE MOVIMIENTOS",
+        'title' => "HISTORIAL DE INCAPACIDADES FINALIZADAS",
         'subtitles' => [
             "Terminal de Transporte de Ibagué",
-            "Registro Histórico del Sistema"
+            "Historial con Seguimiento de Fases"
         ],
         'column_names' => [
-            'id_historial' => 'ID Historial',
-            'id_incapacidad' => 'ID Incapacidad',
+            'id' => 'ID Historial',
+            'incapacidad_id' => 'ID Incapacidad',
             'numero_incapacidad' => 'N° Incapacidad',
             'nombre_empleado' => 'Empleado',
-            'accion' => 'Acción Realizada',
-            'descripcion' => 'Descripción',
-            'usuario' => 'Usuario',
-            'fecha_accion' => 'Fecha y Hora',
-            'detalles_cambio' => 'Detalles del Cambio'
+            'cedula' => 'Cédula',
+            'area' => 'Área',
+            'diagnostico' => 'Diagnóstico',
+            'inicio' => 'Fecha Inicio',
+            'termina' => 'Fecha Fin',
+            'dias_incapacidad' => 'Días',
+            'estado' => 'Estado',
+            'eps_arl' => 'EPS/ARL',
+            'tipo_incapacidad' => 'Tipo Incapacidad',
+            'fases_formateadas' => 'Fases del Seguimiento'
         ]
     ],
     
     'seguimiento' => [
-        'data' => $seg->index(),
+        'data' => $seg->getFiltered($fecha, $empleado, $area, $estado_proceso),
         'filename' => "Reporte_Seguimiento_" . date('Y-m-d_His') . ".xlsx",
         'title' => "SEGUIMIENTO DE INCAPACIDADES",
         'subtitles' => [
@@ -107,7 +120,7 @@ $config = [
             'estado_proceso' => 'Estado Proceso',
             'observaciones' => 'Observaciones',
             'numero_orden' => 'N° Orden',
-            'fases_formateadas' => 'Fases del Seguimiento' // Nueva columna para fases
+            'fases_formateadas' => 'Fases del Seguimiento'
         ]
     ]
 ];
@@ -155,14 +168,19 @@ function procesarValor($value, $key, $type) {
         return 'N/A';
     }
     
-    // Si es específicamente para el campo de fases formateadas en seguimiento
-    if ($type === 'seguimiento' && $key === 'fases_formateadas') {
+    // Si es específicamente para el campo de fases formateadas
+    if (($type === 'seguimiento' || $type === 'historial') && $key === 'fases_formateadas') {
         return $value; // Ya viene formateado
     }
     
-    // Si es el array original de fases (lo ignoramos porque usamos fases_formateadas)
-    if ($type === 'seguimiento' && $key === 'fases') {
+    // Si es el array original de fases
+    if (($type === 'seguimiento' || $type === 'historial') && $key === 'fases') {
         return ''; // Vacío porque lo manejamos aparte
+    }
+    
+    // Si es JSON de fases en historial
+    if ($type === 'historial' && $key === 'fases_json') {
+        return ''; // Vacío porque lo manejamos aparte en fases_formateadas
     }
     
     // Manejar JSON strings
@@ -188,7 +206,8 @@ function procesarValor($value, $key, $type) {
         strpos($key, 'inicio') !== false || 
         strpos($key, 'termina') !== false ||
         strpos($key, 'date') !== false ||
-        strpos($key, 'actualizacion') !== false) {
+        strpos($key, 'actualizacion') !== false ||
+        strpos($key, 'creado_en') !== false) {
         return formatearFecha($value);
     }
     
@@ -219,15 +238,73 @@ function formatearJSON($data, $key) {
 }
 
 // ------------------------------------------------------------------------------------
+// FUNCIÓN PARA FORMATEAR FASES PARA HISTORIAL
+// ------------------------------------------------------------------------------------
+function formatearFasesHistorial($fases_json) {
+    if (empty($fases_json) || !is_array($fases_json)) {
+        return "No hay fases registradas";
+    }
+    
+    $fasesFormateadas = [];
+    $fasesDefinidas = ["RADICADO", "SIN RADICAR", "RESPUESTA EPS", "PAGO", "FINALIZADO"];
+    
+    foreach ($fasesDefinidas as $nombreFase) {
+        // Buscar esta fase en el JSON
+        $faseEncontrada = null;
+        foreach ($fases_json as $fase) {
+            if (isset($fase['nombre_fase']) && strtoupper(trim($fase['nombre_fase'])) === $nombreFase) {
+                $faseEncontrada = $fase;
+                break;
+            }
+        }
+        
+        if ($faseEncontrada) {
+            $estado = $faseEncontrada['estado'] ?? 'PENDIENTE';
+            $fecha = isset($faseEncontrada['fecha_actualizacion']) ? 
+                     formatearFecha($faseEncontrada['fecha_actualizacion']) : 'N/A';
+            $descripcion = $faseEncontrada['descripcion'] ?? '';
+            $evidencia = $faseEncontrada['evidencia'] ?? '';
+            
+            $linea = "• {$nombreFase}: {$estado}";
+            if ($fecha !== 'N/A') {
+                $linea .= " (Actualizado: {$fecha})";
+            }
+            
+            if (!empty($descripcion)) {
+                $linea .= "\n  Descripción: {$descripcion}";
+            }
+            
+            if (!empty($evidencia)) {
+                $linea .= "\n  Evidencia: {$evidencia}";
+            }
+            
+            $fasesFormateadas[] = $linea;
+        } else {
+            $fasesFormateadas[] = "• {$nombreFase}: NO REGISTRADA";
+        }
+    }
+    
+    return implode("\n\n", $fasesFormateadas);
+}
+
+// ------------------------------------------------------------------------------------
 // FUNCIÓN PARA LIMPIAR Y FORMATEAR DATOS - CORREGIDA PARA SEGUIMIENTO
 // ------------------------------------------------------------------------------------
 function limpiarYFormatearDatos($data, $type, $columnNames) {
     $cleanData = [];
     
+    if (empty($data)) {
+        return $cleanData;
+    }
+    
     // Campos a excluir según tipo
     $excludeFields = [
-        'incapacidades' => ['created_at', 'updated_at', 'deleted_at'],
-        'historial' => ['id_historial', 'id_incapacidad'],
+        'incapacidades' => ['created_at', 'updated_at', 'deleted_at', 'fases_json', 'estado_proceso', 'aplicacion_pago', 'numero_orden', 'creado_en'],
+        'historial' => [
+            'fases_json', 'fecha_finalizacion', 'cod_diagnostico', 'valor', 'valor_aprox', 
+            'estado_proceso', 'aplicacion_pago', 'numero_orden', 'creado_en',
+            'mes', 'dias_a_cargo_entidad', 'observaciones'  // Excluir estos también
+        ],
         'seguimiento' => ['fases', 'estado', 'tipo_incapacidad', 'eps_arl', 'cod_diagnostico', 'mes'] // Excluir fases originales
     ];
     
@@ -276,6 +353,33 @@ function limpiarYFormatearDatos($data, $type, $columnNames) {
         }
         
         // ========================================================================
+        // PROCESAMIENTO ESPECIAL PARA HISTORIAL - EXTRAER Y FORMATEAR FASES DEL JSON
+        // ========================================================================
+        if ($type === 'historial') {
+            // Formatear fases desde el JSON
+            if (isset($row['fases_json']) && !empty($row['fases_json'])) {
+                if (is_string($row['fases_json'])) {
+                    $fases_json = json_decode($row['fases_json'], true);
+                } else {
+                    $fases_json = $row['fases_json'];
+                }
+                
+                if (is_array($fases_json)) {
+                    $row['fases_formateadas'] = formatearFasesHistorial($fases_json);
+                } else {
+                    $row['fases_formateadas'] = "No hay datos de fases";
+                }
+            } else {
+                $row['fases_formateadas'] = "No hay fases registradas";
+            }
+            
+            // Para historial, usar 'creado_en' como fecha si no hay otra
+            if (!isset($row['fecha_registro']) && isset($row['creado_en'])) {
+                $row['fecha_registro'] = $row['creado_en'];
+            }
+        }
+        
+        // ========================================================================
         // PROCESAR TODOS LOS CAMPOS
         // ========================================================================
         foreach ($row as $key => $value) {
@@ -289,7 +393,7 @@ function limpiarYFormatearDatos($data, $type, $columnNames) {
             }
             
             // Si es el campo fases_formateadas que creamos
-            if ($type === 'seguimiento' && $key === 'fases_formateadas') {
+            if (($type === 'seguimiento' || $type === 'historial') && $key === 'fases_formateadas') {
                 $displayName = 'Fases del Seguimiento';
                 $displayValue = $value;
             } 
@@ -404,7 +508,7 @@ $row = 1;
 
 // Logo o título de la empresa
 $sheet->setCellValue("A{$row}", "TERMINAL DE TRANSPORTE DE IBAGUÉ S.A.");
-$sheet->mergeCells("A{$row}:K{$row}");
+$sheet->mergeCells("A{$row}:N{$row}");
 $sheet->getStyle("A{$row}")->applyFromArray($styles['titulo_principal']);
 $sheet->getRowDimension($row)->setRowHeight(25);
 $row++;
@@ -412,7 +516,7 @@ $row++;
 // Subtítulos
 foreach ($subtitles as $subtitle) {
     $sheet->setCellValue("A{$row}", $subtitle);
-    $sheet->mergeCells("A{$row}:K{$row}");
+    $sheet->mergeCells("A{$row}:N{$row}");
     $sheet->getStyle("A{$row}")->applyFromArray($styles['subtitulo']);
     $sheet->getRowDimension($row)->setRowHeight(20);
     $row++;
@@ -421,23 +525,46 @@ $row++;
 
 // Título del reporte
 $sheet->setCellValue("A{$row}", $title);
-$sheet->mergeCells("A{$row}:K{$row}");
+$sheet->mergeCells("A{$row}:N{$row}");
 $sheet->getStyle("A{$row}")->applyFromArray($styles['titulo_principal']);
 $sheet->getRowDimension($row)->setRowHeight(30);
 $row++;
 
 // Información del reporte (CON HORA CORRECTA DE COLOMBIA)
 $sheet->setCellValue("A{$row}", "Fecha de generación: " . date('d/m/Y H:i:s'));
-$sheet->mergeCells("A{$row}:K{$row}");
+$sheet->mergeCells("A{$row}:N{$row}");
 $sheet->getStyle("A{$row}")->getFont()->setItalic(true);
 $sheet->getRowDimension($row)->setRowHeight(20);
 $row++;
 
 $sheet->setCellValue("A{$row}", "Total de registros: " . count($cleanData));
-$sheet->mergeCells("A{$row}:K{$row}");
+$sheet->mergeCells("A{$row}:N{$row}");
 $sheet->getStyle("A{$row}")->getFont()->setItalic(true);
 $sheet->getRowDimension($row)->setRowHeight(20);
-$row += 2; // Espacio antes de la tabla
+$row++;
+
+// Mostrar filtros aplicados (si hay)
+$filtros_aplicados = [];
+if(!empty($fecha)) $filtros_aplicados[] = "Fecha: $fecha";
+if(!empty($empleado)) $filtros_aplicados[] = "Empleado: $empleado";
+if(!empty($area)) $filtros_aplicados[] = "Área: $area";
+if(!empty($diagnostico)) $filtros_aplicados[] = "Diagnóstico: $diagnostico";
+if(!empty($estado)) $filtros_aplicados[] = "Estado: $estado";
+if(!empty($accion)) $filtros_aplicados[] = "Acción: $accion";
+if(!empty($usuario)) $filtros_aplicados[] = "Usuario: $usuario";
+if(!empty($estado_proceso)) $filtros_aplicados[] = "Estado Proceso: $estado_proceso";
+if(!empty($eps_arl)) $filtros_aplicados[] = "EPS/ARL: $eps_arl";
+
+if(!empty($filtros_aplicados)) {
+    $filtros_text = "Filtros aplicados: " . implode(" | ", $filtros_aplicados);
+    $sheet->setCellValue("A{$row}", $filtros_text);
+    $sheet->mergeCells("A{$row}:N{$row}");
+    $sheet->getStyle("A{$row}")->getFont()->setItalic(true)->setSize(10);
+    $sheet->getRowDimension($row)->setRowHeight(20);
+    $row++;
+}
+
+$row += 1; // Espacio antes de la tabla
 
 // ----------------------------------------------------------------
 // ENCABEZADOS DE LA TABLA
@@ -451,10 +578,13 @@ if (!empty($cleanData)) {
         $col++;
     }
     
-    // Aplicar estilo a encabezados
-    $lastCol = chr(ord('A') + count($headers) - 1);
-    $headerRange = "A{$row}:{$lastCol}{$row}";
-    $sheet->getStyle($headerRange)->applyFromArray($styles['encabezado']);
+    // Aplicar estilo a encabezados - VERIFICAR QUE HAYA HEADERS
+    $lastCol = 'A';
+    if (count($headers) > 0) {
+        $lastCol = chr(ord('A') + count($headers) - 1);
+        $headerRange = "A{$row}:{$lastCol}{$row}";
+        $sheet->getStyle($headerRange)->applyFromArray($styles['encabezado']);
+    }
     
     // Altura de fila para encabezado
     $sheet->getRowDimension($row)->setRowHeight(30);
@@ -473,7 +603,7 @@ if (!empty($cleanData)) {
             $sheet->setCellValue($cell, $valor);
             
             // Aplicar formato especial para fechas
-            $headerName = $headers[$col === 'A' ? 0 : ord($col) - 65];
+            $headerName = $headers[$col === 'A' ? 0 : ord($col) - 65] ?? '';
             if (strpos($headerName, 'Fecha') !== false || 
                 strpos($headerName, 'Inicio') !== false || 
                 strpos($headerName, 'Fin') !== false) {
@@ -493,7 +623,7 @@ if (!empty($cleanData)) {
         }
         
         // Alternar colores de fila para mejor legibilidad
-        if ($index % 2 == 0) {
+        if ($index % 2 == 0 && $lastCol !== 'A') {
             $range = "A{$row}:{$lastCol}{$row}";
             $sheet->getStyle($range)->getFill()
                   ->setFillType(Fill::FILL_SOLID)
@@ -508,46 +638,62 @@ if (!empty($cleanData)) {
     // ----------------------------------------------------------------
     // AJUSTAR ANCHO DE COLUMNAS
     // ----------------------------------------------------------------
-    foreach (range('A', $lastCol) as $column) {
-        $sheet->getColumnDimension($column)->setAutoSize(true);
-        
-        // Ancho específico para columnas con mucho contenido
-        $colIndex = ord($column) - 65;
-        $headerName = $headers[$colIndex] ?? '';
-        
-        if ($headerName === 'Fases del Seguimiento') {
-            $sheet->getColumnDimension($column)->setWidth(40);
-        } elseif (strpos($headerName, 'Observaciones') !== false || 
-                  strpos($headerName, 'Descripción') !== false) {
-            $sheet->getColumnDimension($column)->setWidth(30);
-        } else {
-            $sheet->getColumnDimension($column)->setWidth(20);
+    if ($lastCol !== 'A') {
+        foreach (range('A', $lastCol) as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+            
+            // Ancho específico para columnas con mucho contenido
+            $colIndex = ord($column) - 65;
+            $headerName = $headers[$colIndex] ?? '';
+            
+            if ($headerName === 'Fases del Seguimiento') {
+                $sheet->getColumnDimension($column)->setWidth(40);
+            } elseif (strpos($headerName, 'Observaciones') !== false || 
+                      strpos($headerName, 'Descripción') !== false ||
+                      strpos($headerName, 'Diagnóstico') !== false) {
+                $sheet->getColumnDimension($column)->setWidth(30);
+            } elseif (strpos($headerName, 'Empleado') !== false) {
+                $sheet->getColumnDimension($column)->setWidth(25);
+            } else {
+                $sheet->getColumnDimension($column)->setWidth(15);
+            }
         }
-    }
-    
-    // Congelar paneles (encabezados fijos)
-    $sheet->freezePane("A" . ($startDataRow));
-    
-    // Aplicar bordes a todo el rango de datos
-    $endRow = $startDataRow + count($cleanData) - 1;
-    if ($endRow >= $startDataRow) {
-        $dataRange = "A{$startDataRow}:{$lastCol}{$endRow}";
-        $sheet->getStyle($dataRange)
-              ->getBorders()->getAllBorders()
-              ->setBorderStyle(Border::BORDER_THIN)
-              ->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('DDDDDD'));
+        
+        // Congelar paneles (encabezados fijos) solo si hay datos
+        if ($startDataRow <= $row) {
+            $sheet->freezePane("A" . ($startDataRow));
+        }
+        
+        // Aplicar bordes a todo el rango de datos
+        $endRow = $startDataRow + count($cleanData) - 1;
+        if ($endRow >= $startDataRow) {
+            $dataRange = "A{$startDataRow}:{$lastCol}{$endRow}";
+            $sheet->getStyle($dataRange)
+                  ->getBorders()->getAllBorders()
+                  ->setBorderStyle(Border::BORDER_THIN)
+                  ->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('DDDDDD'));
+        }
     }
     
     // ----------------------------------------------------------------
     // PIE DE PÁGINA
     // ----------------------------------------------------------------
     $row += 2;
-    $sheet->setCellValue("A{$row}", "*** FIN DEL REPORTE ***");
-    $sheet->mergeCells("A{$row}:{$lastCol}{$row}");
-    $sheet->getStyle("A{$row}")->getFont()->setBold(true)
-          ->getColor()->setARGB('808080');
-    $sheet->getStyle("A{$row}")->getAlignment()
-          ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    if ($lastCol !== 'A') {
+        $sheet->setCellValue("A{$row}", "*** FIN DEL REPORTE ***");
+        $sheet->mergeCells("A{$row}:{$lastCol}{$row}");
+        $sheet->getStyle("A{$row}")->getFont()->setBold(true)
+              ->getColor()->setARGB('808080');
+        $sheet->getStyle("A{$row}")->getAlignment()
+              ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    }
+} else {
+    // Si no hay datos, mostrar mensaje
+    $sheet->setCellValue("A{$row}", "No hay datos para mostrar con los filtros aplicados.");
+    $sheet->mergeCells("A{$row}:N{$row}");
+    $sheet->getStyle("A{$row}")->getFont()->setItalic(true)->setSize(12);
+    $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $sheet->getRowDimension($row)->setRowHeight(30);
 }
 
 // ----------------------------------------------------------------

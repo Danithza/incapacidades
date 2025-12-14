@@ -9,7 +9,7 @@ $historial = $controller->obtenerHistorial();
 // Datos reales de la base de datos
 $totalIncapacidades = count($historial);
 $incapacidadesActivas = array_filter($historial, function($h) {
-    return isset($h['estado_proceso']) && $h['estado_proceso'] === 'Activo';
+    return isset($h['estado']) && $h['estado'] === 'Activo';
 });
 $totalActivas = count($incapacidadesActivas);
 $totalValor = array_sum(array_column($historial, 'valor'));
@@ -39,8 +39,8 @@ arsort($areasCount); // Ordenar de mayor a menor
 // Estados reales
 $estadosCount = [];
 foreach ($historial as $h) {
-    if (isset($h['estado_proceso'])) {
-        $estado = $h['estado_proceso'];
+    if (isset($h['estado'])) {
+        $estado = $h['estado'];
         $estadosCount[$estado] = ($estadosCount[$estado] ?? 0) + 1;
     }
 }

@@ -150,7 +150,7 @@ $historial = $controller->obtenerHistorial();
                             // Evitar pasar null a number_format: verificamos y casteamos
                             $valor_real = (isset($h['valor']) && $h['valor'] !== null && $h['valor'] !== '') ? '$' . number_format((float)$h['valor'], 0, ',', '.') : '<span class="text-muted">-</span>';
                             $valor_aprox = (isset($h['valor_aprox']) && $h['valor_aprox'] !== null && $h['valor_aprox'] !== '') ? '≈ $' . number_format((float)$h['valor_aprox'], 0, ',', '.') : '<span class="text-muted">-</span>';
-                            $estado_proceso = isset($h['estado_proceso']) ? $h['estado_proceso'] : '-';
+                            $estado_proceso = isset($h['estado']) ? $h['estado'] : '-';
                             $aplicacion_pago = isset($h['aplicacion_pago']) ? $h['aplicacion_pago'] : '-';
                             $numero_orden = isset($h['numero_orden']) ? $h['numero_orden'] : '';
                             $observaciones = isset($h['observaciones']) ? $h['observaciones'] : '';

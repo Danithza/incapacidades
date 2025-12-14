@@ -4,6 +4,7 @@ ob_start();
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../controllers/IncapacidadesController.php';
 require_once __DIR__ . '/../controllers/HistorialController.php';
+require_once __DIR__ . '/../controllers/SeguimientoController.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Dompdf\Dompdf;
@@ -12,21 +13,55 @@ use Dompdf\Options;
 // Configurar zona horaria de Colombia
 date_default_timezone_set('America/Bogota');
 
-$type = $_GET['type'] ?? 'incapacidades';
+// Obtener parámetros de filtros
+$fecha = $_GET['fecha'] ?? '';
+$empleado = $_GET['empleado'] ?? '';
+$area = $_GET['area'] ?? '';
+$diagnostico = $_GET['diagnostico'] ?? '';
+$estado = $_GET['estado'] ?? '';
+$accion = $_GET['accion'] ?? '';
+$usuario = $_GET['usuario'] ?? '';
+$estado_proceso = $_GET['estado_proceso'] ?? '';
+$eps_arl = $_GET['eps_arl'] ?? '';
+$type = $_GET['tipo_reporte'] ?? 'incapacidades';
 
+// Inicializar controladores
 $inc = new IncapacidadesController($pdo);
 $hist = new HistorialController($pdo);
+$seg = new SeguimientoController($pdo);
 
-$data = $type === "historial" ? $hist->obtenerHistorial() : $inc->getAll();
+// Obtener datos filtrados según tipo de reporte
+if ($type === "historial") {
+    $data = $hist->getFiltered($fecha, $empleado, $accion, $usuario);
+    $title = "HISTORIAL DEL SISTEMA";
+} elseif ($type === "seguimiento") {
+    $data = $seg->getFiltered($fecha, $empleado, $area, $estado_proceso);
+    $title = "SEGUIMIENTO DE INCAPACIDADES";
+} else {
+    $data = $inc->getFiltered($fecha, $empleado, $area, $diagnostico, $estado, $eps_arl);
+    $title = "INCAPACIDADES LABORALES";
+}
 
 if (!$data || count($data) === 0) {
-    die("<script>alert('No hay datos para generar el informe'); window.history.back();</script>");
+    die("<script>alert('No hay datos para generar el informe con los filtros aplicados'); window.history.back();</script>");
 }
+
+// Información de filtros aplicados
+$filtros_aplicados = [];
+if(!empty($fecha)) $filtros_aplicados[] = "Fecha: " . date('d/m/Y', strtotime($fecha));
+if(!empty($empleado)) $filtros_aplicados[] = "Empleado: " . htmlspecialchars($empleado);
+if(!empty($area)) $filtros_aplicados[] = "Área: " . htmlspecialchars($area);
+if(!empty($diagnostico)) $filtros_aplicados[] = "Diagnóstico: " . htmlspecialchars($diagnostico);
+if(!empty($estado)) $filtros_aplicados[] = "Estado: " . htmlspecialchars($estado);
+if(!empty($accion)) $filtros_aplicados[] = "Acción: " . htmlspecialchars($accion);
+if(!empty($usuario)) $filtros_aplicados[] = "Usuario: " . htmlspecialchars($usuario);
+if(!empty($estado_proceso)) $filtros_aplicados[] = "Estado Proceso: " . htmlspecialchars($estado_proceso);
+if(!empty($eps_arl)) $filtros_aplicados[] = "EPS/ARL: " . htmlspecialchars($eps_arl);
 
 // -------------------------------------------------------------------------
 // ANÁLISIS ESTADÍSTICO Y CÁLCULOS INTELIGENTES
 // -------------------------------------------------------------------------
-function generarAnalisis($data, $type) {
+function generarAnalisis($data, $type, $filtros_aplicados) {
     $analisis = [];
     
     if ($type === 'incapacidades') {
@@ -233,7 +268,7 @@ function generarAnalisis($data, $type) {
         // Agrupar por acción
         $porAccion = [];
         foreach ($data as $item) {
-            $accion = $item['accion'] ?? 'Sin acción';
+            $accion = $item['accion'] ?? 'Registro Finalizado';
             if (!isset($porAccion[$accion])) {
                 $porAccion[$accion] = 0;
             }
@@ -248,7 +283,7 @@ function generarAnalisis($data, $type) {
         // Usuario más activo
         $porUsuario = [];
         foreach ($data as $item) {
-            $usuario = $item['usuario'] ?? 'Sin usuario';
+            $usuario = $item['usuario'] ?? 'Sistema';
             if (!isset($porUsuario[$usuario])) {
                 $porUsuario[$usuario] = 0;
             }
@@ -259,50 +294,54 @@ function generarAnalisis($data, $type) {
         $usuarioMasActivo = key($porUsuario);
         $actividadUsuario = current($porUsuario);
         
-        // Tendencias por hora del día
-        $porHora = array_fill(0, 24, 0);
+        // Análisis por empleado
+        $porEmpleado = [];
         foreach ($data as $item) {
-            if (isset($item['fecha_accion'])) {
-                try {
-                    $fecha = new DateTime($item['fecha_accion']);
-                    $hora = (int)$fecha->format('H');
-                    $porHora[$hora]++;
-                } catch (Exception $e) {
-                    continue;
-                }
+            $empleado = $item['nombre_empleado'] ?? 'Sin nombre';
+            if (!isset($porEmpleado[$empleado])) {
+                $porEmpleado[$empleado] = 0;
             }
+            $porEmpleado[$empleado]++;
         }
         
-        // Hora pico de actividad
-        $horaPico = array_search(max($porHora), $porHora);
+        arsort($porEmpleado);
+        $empleadoMasComun = key($porEmpleado);
+        $frecuenciaEmpleado = current($porEmpleado);
+        
+        // Análisis por área
+        $porArea = [];
+        foreach ($data as $item) {
+            $area = $item['area'] ?? 'Sin área';
+            if (!isset($porArea[$area])) {
+                $porArea[$area] = 0;
+            }
+            $porArea[$area]++;
+        }
+        
+        arsort($porArea);
+        $areaMasComun = key($porArea);
+        $frecuenciaArea = current($porArea);
         
         $analisis['texto'] = "
-        <h3 style='color: #2E75B6; margin-top: 20px;'>ANÁLISIS DE ACTIVIDAD DEL SISTEMA</h3>
+        <h3 style='color: #2E75B6; margin-top: 20px;'>ANÁLISIS DEL HISTORIAL</h3>
         
         <p><strong>1. ACTIVIDAD GENERAL:</strong><br>
-        Se han registrado <strong>{$totalRegistros} acciones</strong> en el historial del sistema.</p>
+        Se han registrado <strong>{$totalRegistros} registros históricos</strong> de incapacidades finalizadas.</p>
         
-        <p><strong>2. TIPO DE ACCIONES:</strong><br>
-        La acción más frecuente es <strong>'{$accionMasComun}'</strong> ({$frecuenciaAccion} veces). ";
+        <p><strong>2. EMPLEADOS CON MÁS REGISTROS:</strong><br>
+        El empleado <strong>{$empleadoMasComun}</strong> tiene {$frecuenciaEmpleado} registros en el historial.</p>
         
-        if (strpos($accionMasComun, 'crear') !== false || strpos($accionMasComun, 'nuevo') !== false) {
-            $analisis['texto'] .= "Esto indica un alto volumen de registros nuevos en el sistema.";
-        } elseif (strpos($accionMasComun, 'actualizar') !== false || strpos($accionMasComun, 'modificar') !== false) {
-            $analisis['texto'] .= "Esto sugiere un proceso activo de seguimiento y actualización de casos.";
-        }
+        <p><strong>3. DISTRIBUCIÓN POR ÁREA:</strong><br>
+        El área <strong>{$areaMasComun}</strong> concentra {$frecuenciaArea} registros históricos.</p>
         
-        $analisis['texto'] .= "</p>
+        <p><strong>4. TIPO DE ACCIONES:</strong><br>
+        La acción más frecuente es <strong>'{$accionMasComun}'</strong> ({$frecuenciaAccion} veces).</p>
         
-        <p><strong>3. USUARIOS ACTIVOS:</strong><br>
+        <p><strong>5. USUARIOS ACTIVOS:</strong><br>
         El usuario <strong>{$usuarioMasActivo}</strong> es el más activo con <strong>{$actividadUsuario} acciones</strong> realizadas.</p>
         
-        <p><strong>4. PATRÓN TEMPORAL:</strong><br>
-        La hora de mayor actividad en el sistema es alrededor de las <strong>{$horaPico}:00 horas</strong>.</p>
-        
-        <p><strong>5. RECOMENDACIONES:</strong><br>
-        • Monitorear la distribución de actividades entre usuarios<br>
-        • Identificar procesos que requieren mayor frecuencia de actualización<br>
-        • Optimizar los horarios de gestión según los picos de actividad</p>";
+        <p><strong>6. INFORMACIÓN ADICIONAL:</strong><br>
+        Este historial incluye el seguimiento completo de fases de cada incapacidad que fue finalizada en el sistema.</p>";
         
         $analisis['metricas'] = [
             'total_registros' => $totalRegistros,
@@ -310,15 +349,120 @@ function generarAnalisis($data, $type) {
             'frecuencia_accion' => $frecuenciaAccion,
             'usuario_mas_activo' => $usuarioMasActivo,
             'actividad_usuario' => $actividadUsuario,
-            'hora_pico' => $horaPico
+            'empleado_mas_comun' => $empleadoMasComun,
+            'frecuencia_empleado' => $frecuenciaEmpleado,
+            'area_mas_comun' => $areaMasComun,
+            'frecuencia_area' => $frecuenciaArea
         ];
+        
+    } elseif ($type === 'seguimiento') {
+        // Análisis para seguimiento
+        $totalRegistros = count($data);
+        
+        // Análisis por empleado
+        $porEmpleado = [];
+        foreach ($data as $item) {
+            $empleado = $item['nombre_empleado'] ?? 'Sin nombre';
+            if (!isset($porEmpleado[$empleado])) {
+                $porEmpleado[$empleado] = 0;
+            }
+            $porEmpleado[$empleado]++;
+        }
+        
+        arsort($porEmpleado);
+        $empleadoMasComun = key($porEmpleado);
+        $frecuenciaEmpleado = current($porEmpleado);
+        
+        // Análisis por área
+        $porArea = [];
+        foreach ($data as $item) {
+            $area = $item['area'] ?? 'Sin área';
+            if (!isset($porArea[$area])) {
+                $porArea[$area] = 0;
+            }
+            $porArea[$area]++;
+        }
+        
+        arsort($porArea);
+        $areaMasComun = key($porArea);
+        $frecuenciaArea = current($porArea);
+        
+        // Análisis por estado de proceso
+        $porEstadoProceso = [];
+        foreach ($data as $item) {
+            $estado_proceso = $item['estado_proceso'] ?? 'Sin estado';
+            if (!isset($porEstadoProceso[$estado_proceso])) {
+                $porEstadoProceso[$estado_proceso] = 0;
+            }
+            $porEstadoProceso[$estado_proceso]++;
+        }
+        
+        arsort($porEstadoProceso);
+        $estadoProcesoMasComun = key($porEstadoProceso);
+        $frecuenciaEstadoProceso = current($porEstadoProceso);
+        
+        // Análisis de fases
+        $fasesActivas = 0;
+        $fasesCompletadas = 0;
+        foreach ($data as $item) {
+            if (isset($item['fases']) && is_array($item['fases'])) {
+                foreach ($item['fases'] as $fase) {
+                    if (is_array($fase)) {
+                        if (isset($fase['estado']) && $fase['estado'] === 'COMPLETADO') {
+                            $fasesCompletadas++;
+                        } else {
+                            $fasesActivas++;
+                        }
+                    }
+                }
+            }
+        }
+        
+        $analisis['texto'] = "
+        <h3 style='color: #2E75B6; margin-top: 20px;'>ANÁLISIS DEL SEGUIMIENTO</h3>
+        
+        <p><strong>1. ACTIVIDAD GENERAL:</strong><br>
+        Se están realizando seguimiento a <strong>{$totalRegistros} incapacidades</strong> activas.</p>
+        
+        <p><strong>2. EMPLEADOS EN SEGUIMIENTO:</strong><br>
+        El empleado <strong>{$empleadoMasComun}</strong> tiene {$frecuenciaEmpleado} incapacidades en seguimiento.</p>
+        
+        <p><strong>3. DISTRIBUCIÓN POR ÁREA:</strong><br>
+        El área <strong>{$areaMasComun}</strong> concentra {$frecuenciaArea} casos en seguimiento.</p>
+        
+        <p><strong>4. ESTADO DE PROCESO:</strong><br>
+        El estado de proceso más común es <strong>'{$estadoProcesoMasComun}'</strong> ({$frecuenciaEstadoProceso} casos).</p>
+        
+        <p><strong>5. AVANCE DE FASES:</strong><br>
+        Se han completado <strong>{$fasesCompletadas} fases</strong> y hay <strong>{$fasesActivas} fases activas</strong> en seguimiento.</p>
+        
+        <p><strong>6. SEGUIMIENTO ACTIVO:</strong><br>
+        Todas estas incapacidades tienen un seguimiento activo de fases que se monitorea constantemente.</p>";
+        
+        $analisis['metricas'] = [
+            'total_registros' => $totalRegistros,
+            'empleado_mas_comun' => $empleadoMasComun,
+            'frecuencia_empleado' => $frecuenciaEmpleado,
+            'area_mas_comun' => $areaMasComun,
+            'frecuencia_area' => $frecuenciaArea,
+            'estado_proceso_mas_comun' => $estadoProcesoMasComun,
+            'frecuencia_estado_proceso' => $frecuenciaEstadoProceso,
+            'fases_completadas' => $fasesCompletadas,
+            'fases_activas' => $fasesActivas
+        ];
+    }
+    
+    // Agregar información de filtros aplicados al análisis
+    if (!empty($filtros_aplicados)) {
+        $filtros_texto = "<p><strong>FILTROS APLICADOS:</strong><br>" . implode(" | ", $filtros_aplicados) . "</p>";
+        $analisis['texto'] = $filtros_texto . $analisis['texto'];
     }
     
     return $analisis;
 }
 
 // Generar análisis
-$analisis = generarAnalisis($data, $type);
+$analisis = generarAnalisis($data, $type, $filtros_aplicados);
 
 // -------------------------------------------------------------------------
 // FUNCIÓN PARA FORMATEAR DATOS INDIVIDUALES
@@ -356,7 +500,7 @@ $html = '
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Informe - ' . ($type === 'historial' ? 'Historial' : 'Incapacidades') . '</title>
+    <title>Informe - ' . ($type === 'historial' ? 'Historial' : ($type === 'seguimiento' ? 'Seguimiento' : 'Incapacidades')) . '</title>
     <style>
         @page {
             margin: 2.5cm 2cm;
@@ -404,6 +548,14 @@ $html = '
             border-radius: 5px;
             margin: 15px 0;
             border-left: 4px solid #2E75B6;
+        }
+        
+        .filtros-box {
+            background-color: #e8f4fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #b6d4fe;
         }
         
         .section {
@@ -530,7 +682,8 @@ $html = '
 <body>
     <div class="header">
         <div class="company-name">TERMINAL DE TRANSPORTE DE IBAGUÉ S.A.</div>
-        <div class="report-title">INFORME ' . ($type === 'historial' ? 'DE HISTORIAL DEL SISTEMA' : 'DE INCAPACIDADES LABORALES') . '</div>
+        <div class="report-title">INFORME ' . ($type === 'historial' ? 'DE HISTORIAL DEL SISTEMA' : 
+                                              ($type === 'seguimiento' ? 'DE SEGUIMIENTO DE INCAPACIDADES' : 'DE INCAPACIDADES LABORALES')) . '</div>
         <div class="subtitle">Gerencia de Talento Humano</div>
         <div class="subtitle">Ibagué, Tolima - Colombia</div>
     </div>
@@ -538,16 +691,28 @@ $html = '
     <div class="report-meta">
         <strong>Información del Reporte:</strong><br>
         • Fecha de generación: ' . formatearFechaColombia(date('Y-m-d H:i:s')) . '<br>
-        • Periodo analizado: Últimos 90 días<br>
-        • Año de referencia: 2025
-    </div>
+        • Periodo analizado: Datos actualizados al ' . date('d/m/Y') . '<br>
+        • Total de registros: ' . count($data) . '<br>
+        • Tipo de reporte: ' . ucfirst($type) . '
+    </div>';
     
+// Mostrar filtros aplicados si hay
+if(!empty($filtros_aplicados)) {
+    $html .= '
+    <div class="filtros-box">
+        <strong>Filtros aplicados en este reporte:</strong><br>
+        ' . implode(' | ', $filtros_aplicados) . '
+    </div>';
+}
+
+$html .= '
     <div class="highlight-box">
-        <h3 style="margin-top: 0; color: #1F4E78;">RESUMEN</h3>
+        <h3 style="margin-top: 0; color: #1F4E78;">RESUMEN EJECUTIVO</h3>
         <p>Este informe presenta un análisis detallado de ' . 
-           ($type === 'historial' ? 'la actividad del sistema de gestión' : 'las incapacidades laborales') . 
-           ' registradas en el Terminal de Transporte de Ibagué. El análisis incluye tendencias temporales, distribución por áreas, 
-           patrones de comportamiento y recomendaciones para la gestión preventiva.</p>
+           ($type === 'historial' ? 'la actividad histórica del sistema de gestión de incapacidades, incluyendo registros finalizados y su seguimiento completo.' : 
+            ($type === 'seguimiento' ? 'las incapacidades en proceso de seguimiento activo, mostrando el avance en cada fase del proceso.' : 
+             'las incapacidades laborales activas registradas en el Terminal de Transporte de Ibagué.')) . 
+           ' El análisis incluye tendencias temporales, distribución por áreas, patrones de comportamiento y recomendaciones para la gestión preventiva.</p>
     </div>';
     
 // Mostrar métricas clave
@@ -556,41 +721,63 @@ $html .= '
         <div class="section-title">MÉTRICAS CLAVE</div>
         <div class="metric-grid">';
         
+// Mostrar métricas según tipo de reporte
 if ($type === 'incapacidades') {
+    $metricas = $analisis['metricas'];
     $html .= '
             <div class="metric-card">
-                <div class="metric-value">' . $analisis['metricas']['total_registros'] . '</div>
+                <div class="metric-value">' . $metricas['total_registros'] . '</div>
                 <div class="metric-label">Total de Incapacidades</div>
             </div>
             <div class="metric-card">
-                <div class="metric-value">' . $analisis['metricas']['ultimos_30_dias'] . '</div>
+                <div class="metric-value">' . $metricas['ultimos_30_dias'] . '</div>
                 <div class="metric-label">Últimos 30 días</div>
             </div>
             <div class="metric-card">
-                <div class="metric-value">' . $analisis['metricas']['dias_promedio'] . ' días</div>
+                <div class="metric-value">' . $metricas['dias_promedio'] . ' días</div>
                 <div class="metric-label">Duración Promedio</div>
             </div>
             <div class="metric-card">
-                <div class="metric-value">' . $analisis['metricas']['area_mas_afectada'] . '</div>
+                <div class="metric-value">' . (isset($metricas['area_mas_afectada']) ? substr($metricas['area_mas_afectada'], 0, 15) . '...' : 'N/A') . '</div>
                 <div class="metric-label">Área Más Afectada</div>
             </div>';
-} else {
+} elseif ($type === 'historial') {
+    $metricas = $analisis['metricas'];
     $html .= '
             <div class="metric-card">
-                <div class="metric-value">' . $analisis['metricas']['total_registros'] . '</div>
-                <div class="metric-label">Total de Acciones</div>
+                <div class="metric-value">' . $metricas['total_registros'] . '</div>
+                <div class="metric-label">Registros Históricos</div>
             </div>
             <div class="metric-card">
-                <div class="metric-value">' . $analisis['metricas']['accion_mas_comun'] . '</div>
-                <div class="metric-label">Acción Más Frecuente</div>
+                <div class="metric-value">' . (isset($metricas['empleado_mas_comun']) ? substr($metricas['empleado_mas_comun'], 0, 12) . '...' : 'N/A') . '</div>
+                <div class="metric-label">Empleado Más Común</div>
             </div>
             <div class="metric-card">
-                <div class="metric-value">' . $analisis['metricas']['usuario_mas_activo'] . '</div>
-                <div class="metric-label">Usuario Más Activo</div>
+                <div class="metric-value">' . (isset($metricas['area_mas_comun']) ? substr($metricas['area_mas_comun'], 0, 15) . '...' : 'N/A') . '</div>
+                <div class="metric-label">Área Más Común</div>
             </div>
             <div class="metric-card">
-                <div class="metric-value">' . $analisis['metricas']['hora_pico'] . ':00</div>
-                <div class="metric-label">Hora Pico de Actividad</div>
+                <div class="metric-value">' . $metricas['frecuencia_accion'] . '</div>
+                <div class="metric-label">Acción Principal</div>
+            </div>';
+} else { // seguimiento
+    $metricas = $analisis['metricas'];
+    $html .= '
+            <div class="metric-card">
+                <div class="metric-value">' . $metricas['total_registros'] . '</div>
+                <div class="metric-label">En Seguimiento</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">' . (isset($metricas['empleado_mas_comun']) ? substr($metricas['empleado_mas_comun'], 0, 12) . '...' : 'N/A') . '</div>
+                <div class="metric-label">Empleado Principal</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">' . $metricas['fases_completadas'] . '</div>
+                <div class="metric-label">Fases Completadas</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">' . $metricas['fases_activas'] . '</div>
+                <div class="metric-label">Fases Activas</div>
             </div>';
 }
 
@@ -601,65 +788,104 @@ $html .= '
 // Análisis ejecutivo
 $html .= $analisis['texto'];
     
-// Sección de casos destacados
-$html .= '
+// Sección de casos destacados (solo para incapacidades y seguimiento)
+if ($type === 'incapacidades' || $type === 'seguimiento') {
+    $html .= '
     <div class="section">
         <div class="section-title">CASOS DESTACADOS</div>';
         
-if ($type === 'incapacidades' && count($data) > 0) {
-    // Mostrar primeros 5 casos como ejemplo
-    $casosDestacados = array_slice($data, 0, min(5, count($data)));
-    
-    foreach ($casosDestacados as $index => $caso) {
-        $empleado = $caso['nombre_empleado'] ?? 'Empleado no identificado';
-        $area = $caso['area'] ?? 'Área no especificada';
-        $diagnostico = $caso['diagnostico'] ?? 'Diagnóstico no registrado';
-        $dias = $caso['dias_incapacidad'] ?? 'No especificado';
-        $fechaInicio = isset($caso['inicio']) ? formatearFechaColombia($caso['inicio']) : 'Fecha no disponible';
+    if (count($data) > 0) {
+        // Mostrar primeros 5 casos como ejemplo
+        $casosDestacados = array_slice($data, 0, min(5, count($data)));
         
-        $html .= '
-        <div class="case-item">
-            <div class="case-header">Caso ' . ($index + 1) . ': ' . htmlspecialchars($empleado) . '</div>
-            <div class="case-details">
-                • Área: ' . htmlspecialchars($area) . '<br>
-                • Diagnóstico: ' . htmlspecialchars($diagnostico) . '<br>
-                • Duración: ' . $dias . ' días<br>
-                • Inició: ' . $fechaInicio . '<br>
-                • Estado: <span class="badge badge-' . strtolower($caso['estado'] ?? 'info') . '">' . ($caso['estado'] ?? 'Pendiente') . '</span>
-            </div>
-        </div>';
+        foreach ($casosDestacados as $index => $caso) {
+            $empleado = $caso['nombre_empleado'] ?? 'Empleado no identificado';
+            $area = $caso['area'] ?? 'Área no especificada';
+            $diagnostico = $caso['diagnostico'] ?? 'Diagnóstico no registrado';
+            
+            if ($type === 'incapacidades') {
+                $dias = $caso['dias_incapacidad'] ?? 'No especificado';
+                $fechaInicio = isset($caso['inicio']) ? formatearFechaColombia($caso['inicio']) : 'Fecha no disponible';
+                $estado = $caso['estado'] ?? 'Pendiente';
+                
+                $html .= '
+                <div class="case-item">
+                    <div class="case-header">Caso ' . ($index + 1) . ': ' . htmlspecialchars($empleado) . '</div>
+                    <div class="case-details">
+                        • Área: ' . htmlspecialchars($area) . '<br>
+                        • Diagnóstico: ' . htmlspecialchars($diagnostico) . '<br>
+                        • Duración: ' . $dias . ' días<br>
+                        • Inició: ' . $fechaInicio . '<br>
+                        • Estado: <span class="badge badge-' . strtolower($estado) . '">' . $estado . '</span>
+                    </div>
+                </div>';
+            } else { // seguimiento
+                $estadoProceso = $caso['estado_proceso'] ?? 'Sin estado';
+                $observaciones = $caso['observaciones'] ?? 'Sin observaciones';
+                $fechaInicio = isset($caso['inicio']) ? formatearFechaColombia($caso['inicio']) : 'Fecha no disponible';
+                
+                $html .= '
+                <div class="case-item">
+                    <div class="case-header">Caso ' . ($index + 1) . ': ' . htmlspecialchars($empleado) . '</div>
+                    <div class="case-details">
+                        • Área: ' . htmlspecialchars($area) . '<br>
+                        • Diagnóstico: ' . htmlspecialchars($diagnostico) . '<br>
+                        • Estado Proceso: ' . htmlspecialchars($estadoProceso) . '<br>
+                        • Inició: ' . $fechaInicio . '<br>
+                        • Observaciones: ' . (strlen($observaciones) > 100 ? substr(htmlspecialchars($observaciones), 0, 100) . '...' : htmlspecialchars($observaciones)) . '
+                    </div>
+                </div>';
+            }
+        }
+        
+        if (count($data) > 5) {
+            $html .= '
+            <div class="observation">
+                <strong>Nota:</strong> Se muestran ' . count($casosDestacados) . ' casos de ' . count($data) . ' registros totales. 
+                Para el análisis completo, consulte la base de datos del sistema.
+            </div>';
+        }
     }
     
-    if (count($data) > 5) {
-        $html .= '
-        <div class="observation">
-            <strong>Nota:</strong> Se muestran ' . count($casosDestacados) . ' casos de ' . count($data) . ' registros totales. 
-            Para el análisis completo, consulte la base de datos del sistema.
-        </div>';
-    }
+    $html .= '
+    </div>';
 }
 
-$html .= '
-    </div>';
-    
 // Recomendaciones finales
 $html .= '
     <div class="section">
         <div class="section-title">CONCLUSIONES Y RECOMENDACIONES</div>
         
         <div class="recommendation">
-            <strong>Recomendaciones Estratégicas:</strong><br>
-            1. Implementar un programa de bienestar laboral focalizado en el área más afectada<br>
+            <strong>Recomendaciones Estratégicas:</strong><br>';
+            
+if ($type === 'incapacidades') {
+    $html .= '1. Implementar un programa de bienestar laboral focalizado en el área más afectada<br>
             2. Establecer seguimiento personalizado para empleados con recurrencia de casos<br>
             3. Realizar análisis trimestral comparativo para identificar tendencias<br>
-            4. Fortalecer la gestión preventiva en temporadas de mayor incidencia
+            4. Fortalecer la gestión preventiva en temporadas de mayor incidencia';
+} elseif ($type === 'historial') {
+    $html .= '1. Analizar patrones recurrentes en incapacidades finalizadas<br>
+            2. Identificar áreas de mejora en el proceso de seguimiento<br>
+            3. Establecer métricas de eficiencia en la gestión de casos<br>
+            4. Documentar lecciones aprendidas para mejorar procesos futuros';
+} else { // seguimiento
+    $html .= '1. Monitorear activamente las fases pendientes de completar<br>
+            2. Establecer alertas para casos con seguimiento prolongado<br>
+            3. Optimizar la comunicación entre áreas involucradas<br>
+            4. Revisar periódicamente el estado de procesos críticos';
+}
+
+$html .= '
         </div>
         
         <div class="insight">
             <strong>Insight Clave:</strong><br>
             ' . ($type === 'incapacidades' ? 
                 'El análisis revela patrones específicos por área y diagnóstico que permiten focalizar las acciones preventivas.' : 
-                'La actividad del sistema muestra concentración en ciertos horarios y usuarios, indicando oportunidades para optimizar procesos.') . '
+                ($type === 'historial' ? 
+                 'El historial muestra la trazabilidad completa de cada caso, permitiendo evaluar la eficiencia del proceso de gestión.' :
+                 'El seguimiento activo permite identificar cuellos de botella y optimizar tiempos de respuesta en la gestión de incapacidades.')) . '
         </div>
     </div>';
     
@@ -682,7 +908,9 @@ $dompdf->setPaper("A4", "portrait");
 $dompdf->render();
 
 // Headers para descarga PDF
-$filename = "Informe_Incapacidades_" . ($type === 'historial' ? 'Historial' : 'Incapacidades') . "_" . date('Y-m-d') . ".pdf";
+$filename = "Informe_" . ($type === 'historial' ? 'Historial' : 
+                         ($type === 'seguimiento' ? 'Seguimiento' : 'Incapacidades')) . 
+           "_" . date('Y-m-d_Hi') . ".pdf";
 
 header("Content-Type: application/pdf");
 header("Content-Disposition: attachment; filename=\"" . $filename . "\"");

@@ -1,41 +1,201 @@
-body {
-    font-family: Arial, Helvetica, sans-serif;
-    margin: 20px;
-    color: #222;
+/* Estilos para filtros */
+.filtros-container {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
 }
 
-h1 {
-    margin-bottom: 10px;
+.filtros-container h2 {
+    color: #198754;
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #20c997;
 }
 
-.btn {
-    padding: 8px 14px;
-    background: #2c6db8;
-    text-decoration: none;
-    color: white;
-    border-radius: 6px;
-    margin-right: 6px;
+.filtros-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    align-items: end;
+}
+
+.filtro-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filtro-group label {
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #495057;
+}
+
+.filtro-group input,
+.filtro-group select {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
     font-size: 14px;
 }
 
+.filtro-group input:focus,
+.filtro-group select:focus {
+    outline: none;
+    border-color: #20c997;
+    box-shadow: 0 0 0 0.2rem rgba(32, 201, 151, 0.25);
+}
+
+.filtro-buttons {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.resultados-count {
+    margin-left: auto;
+    font-weight: 600;
+    color: #198754;
+    background-color: #d1f2eb;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #a3e4d7;
+}
+
+/* Estilos para botones */
+.btn {
+    padding: 10px 20px;
+    background-color: #198754;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.btn:hover {
+    background-color: #157347;
+    color: white;
+}
+
 .btn.rojo {
-    background: #b82c2c;
+    background-color: #dc3545;
 }
 
-.acciones {
-    margin-bottom: 20px;
+.btn.rojo:hover {
+    background-color: #c82333;
 }
 
+/* Estilos para la tabla */
 .tabla {
     width: 100%;
     border-collapse: collapse;
+    margin-top: 20px;
 }
 
-.tabla th, .tabla td {
-    border: 1px solid #ddd;
-    padding: 8px;
+.tabla thead {
+    background-color: #198754;
+    color: white;
+}
+
+.tabla th,
+.tabla td {
+    padding: 12px;
+    text-align: left;
+    border: 1px solid #dee2e6;
 }
 
 .tabla th {
-    background: #f2f2f2;
+    font-weight: 600;
+}
+
+.tabla tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.tabla tbody tr:hover {
+    background-color: #d1f2eb;
+}
+
+/* Badges para estados */
+.estado-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.estado-activo { background-color: #d4edda; color: #155724; }
+.estado-inactivo { background-color: #f8d7da; color: #721c24; }
+.estado-pendiente { background-color: #fff3cd; color: #856404; }
+.estado-finalizado { background-color: #d1ecf1; color: #0c5460; }
+.estado-aprobado { background-color: #cce5ff; color: #004085; }
+
+/* Estilos para "sin resultados" */
+.no-results {
+    text-align: center;
+    padding: 40px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 2px dashed #dee2e6;
+    color: #6c757d;
+}
+
+/* Acciones */
+.acciones {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #d1f2eb;
+    border-radius: 8px;
+}
+
+.acciones h3 {
+    margin-top: 0;
+    color: #198754;
+    margin-bottom: 15px;
+}
+
+.acciones .btn {
+    margin-right: 10px;
+    margin-bottom: 5px;
+}
+
+/* Colores verdes para destacar elementos */
+.filtros-container {
+    border-color: #20c997;
+}
+
+.tabla thead th {
+    background-color: #198754;
+}
+
+.btn {
+    background-color: #198754;
+}
+
+.btn:hover {
+    background-color: #157347;
+}
+
+.resultados-count {
+    background-color: #d1f2eb;
+    border-color: #a3e4d7;
+}
+
+.filtro-group input:focus,
+.filtro-group select:focus {
+    border-color: #20c997;
+    box-shadow: 0 0 0 0.2rem rgba(32, 201, 151, 0.25);
+}
+
+.tabla tbody tr:hover {
+    background-color: #d1f2eb;
 }
