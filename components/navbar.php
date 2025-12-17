@@ -345,6 +345,16 @@
                 <span class="menu-icon">📈</span>
                 <span class="menu-text">Reportes</span>
             </a>
+
+            <a href="../views/usuarios.php">
+        <span class="menu-icon">👤</span>
+        <span class="menu-text">Usuarios</span>
+    </a>
+
+    <a href="../views/diagnosticos.php">
+        <span class="menu-icon">🩺</span>
+        <span class="menu-text">Diagnósticos</span>
+    </a>
         </div>
         
     </div>
