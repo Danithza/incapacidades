@@ -125,7 +125,13 @@ $lista = $controller->getAll();
             <th style="text-align:center;">Acciones</th>
         </tr>
     </thead>
-
+<!-- Agrega esto en tu vista principal después del título -->
+<div style="margin-bottom: 20px; display: flex; gap: 10px;">
+    <a href="crear_incapacidad.php" class="btn-nueva">➕ Nueva Incapacidad</a>
+    <a href="importar_excel.php" class="btn-nueva" style="background: #2980b9;">
+        <i class="fas fa-file-excel"></i> Importar desde Excel
+    </a>
+</div>
     <tbody>
     <?php foreach ($lista as $row): ?>
         <tr>

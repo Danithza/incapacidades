@@ -1,275 +1,321 @@
-class Dashboard {
-    constructor() {
-        this.init();
-    }
+// Variables globales
+let chartMensual = null;
+let chartTipos = null;
+let currentChartType = 'bar';
+let currentPieType = 'pie';
 
-    init() {
-        this.initializeCharts();
-        this.initializeEventListeners();
-    }
-
-    initializeCharts() {
-        // Gráfico de incapacidades por mes
-        if (document.getElementById('incapacityChart')) {
-            const ctx1 = document.getElementById('incapacityChart').getContext('2d');
-            
-            // Formatear nombres de meses
-            const mesesLabels = window.chartData.meses.map(mes => {
-                const [year, month] = mes.split('-');
-                const date = new Date(year, month - 1);
-                return date.toLocaleDateString('es-ES', { month: 'short' });
-            });
-
-            this.incapacityChart = new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: mesesLabels,
-                    datasets: [{
-                        label: 'Incapacidades',
-                        data: window.chartData.incapacidadesPorMes,
-                        backgroundColor: '#4caf50',
-                        borderColor: '#2e7d32',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.dataset.label}: ${context.raw}`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Gráfico de tipos de incapacidad
-        if (document.getElementById('typeChart') && window.chartData.tiposIncapacidad && Object.keys(window.chartData.tiposIncapacidad).length > 0) {
-            const ctx2 = document.getElementById('typeChart').getContext('2d');
-            
-            const tipos = Object.keys(window.chartData.tiposIncapacidad);
-            const valores = Object.values(window.chartData.tiposIncapacidad);
-            
-            // Colores dinámicos basados en el número de tipos
-            const colores = tipos.map((_, index) => {
-                const hue = (index * 120) % 360;
-                return `hsl(${hue}, 70%, 60%)`;
-            });
-
-            this.typeChart = new Chart(ctx2, {
-                type: 'doughnut',
-                data: {
-                    labels: tipos,
-                    datasets: [{
-                        data: valores,
-                        backgroundColor: colores,
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                usePointStyle: true
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const value = context.raw;
-                                    const percentage = Math.round((value / total) * 100);
-                                    return `${context.label}: ${value} (${percentage}%)`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-    }
-
-    initializeEventListeners() {
-        // Botón de exportación
-        const btnExport = document.getElementById('btnExport');
-        if (btnExport) {
-            btnExport.addEventListener('click', () => this.exportData());
-        }
-    }
-
-    exportData() {
-        try {
-            // Crear datos para exportar usando los datos disponibles
-            const data = {
-                totalIncapacidades: parseInt(document.querySelector('.card-primary h3')?.textContent || '0'),
-                incapacidadesActivas: parseInt(document.querySelector('.card-warning h3')?.textContent || '0'),
-                valorTotal: parseFloat(document.querySelector('.card-success h3')?.textContent?.replace(/[^0-9]/g, '') || '0'),
-                promedioDias: parseFloat(document.querySelector('.card-info h3')?.textContent?.replace(',', '.') || '0'),
-                fechaExportacion: new Date().toLocaleDateString('es-ES'),
-                resumenTipos: window.chartData?.tiposIncapacidad || {}
-            };
-
-            // Crear contenido del archivo
-            let content = 'RESUMEN DE INCAPACIDADES\n';
-            content += '========================\n\n';
-            content += `Fecha de exportación: ${data.fechaExportacion}\n\n`;
-            content += `Total de incapacidades: ${data.totalIncapacidades}\n`;
-            content += `Incapacidades activas: ${data.incapacidadesActivas}\n`;
-            content += `Valor total: $${data.valorTotal.toLocaleString('es-ES')}\n`;
-            content += `Promedio de días: ${data.promedioDias.toFixed(1)}\n\n`;
-            
-            if (Object.keys(data.resumenTipos).length > 0) {
-                content += 'DISTRIBUCIÓN POR TIPO:\n';
-                Object.entries(data.resumenTipos).forEach(([tipo, cantidad]) => {
-                    content += `  ${tipo}: ${cantidad}\n`;
-                });
-            } else {
-                content += 'No hay datos de distribución por tipo.\n';
-            }
-
-            // Añadir información de áreas
-            const areaItems = document.querySelectorAll('.area-item');
-            if (areaItems.length > 0) {
-                content += '\nTOP ÁREAS:\n';
-                areaItems.forEach(item => {
-                    const areaName = item.querySelector('.area-name')?.textContent || '';
-                    const areaCount = item.querySelector('.area-count')?.textContent || '';
-                    content += `  ${areaName}: ${areaCount}\n`;
-                });
-            }
-
-            // Añadir información de estados
-            const statusItems = document.querySelectorAll('.status-item');
-            if (statusItems.length > 0) {
-                content += '\nESTADOS DE PROCESO:\n';
-                statusItems.forEach(item => {
-                    const status = item.querySelector('.status-badge')?.textContent || '';
-                    const count = item.querySelector('.status-count')?.textContent || '';
-                    content += `  ${status}: ${count}\n`;
-                });
-            }
-
-            // Descargar archivo
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `reporte-incapacidades-${new Date().toISOString().split('T')[0]}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-
-            // Mostrar confirmación
-            this.showNotification('Reporte exportado exitosamente', 'success');
-        } catch (error) {
-            console.error('Error al exportar datos:', error);
-            this.showNotification('Error al exportar el reporte', 'error');
-        }
-    }
-
-    showNotification(message, type = 'info') {
-        // Crear notificación
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.innerHTML = `
-            <span>${message}</span>
-            <button class="notification-close">&times;</button>
-        `;
-        
-        // Estilos para la notificación
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            background-color: ${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#2196f3'};
-            color: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            z-index: 1000;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            min-width: 300px;
-            animation: slideIn 0.3s ease;
-        `;
-
-        // Botón para cerrar
-        const closeBtn = notification.querySelector('.notification-close');
-        closeBtn.style.cssText = `
-            background: none;
-            border: none;
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-            margin-left: 15px;
-            padding: 0;
-            line-height: 1;
-        `;
-
-        closeBtn.addEventListener('click', () => {
-            notification.style.animation = 'slideOut 0.3s ease';
-            setTimeout(() => notification.remove(), 300);
-        });
-
-        document.body.appendChild(notification);
-
-        // Auto-remover después de 5 segundos
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => notification.remove(), 300);
-            }
-        }, 5000);
-
-        // Animaciones CSS
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            @keyframes slideOut {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(100%); opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-}
-
-// Inicializar el dashboard cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', () => {
-    // Verificar que los datos del gráfico estén disponibles
-    if (!window.chartData) {
-        console.warn('chartData no está definido. Usando datos por defecto.');
-        window.chartData = {
-            meses: [],
-            incapacidadesPorMes: [],
-            tiposIncapacidad: {}
-        };
+// Inicializar gráficos cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Dashboard inicializado');
+    
+    // Inicializar gráficos
+    initChartMensual();
+    if (window.dashboardData.tiposData.length > 0) {
+        initChartTipos();
     }
     
-    new Dashboard();
+    // Configurar event listeners
+    setupEventListeners();
+    
+    // Iniciar animaciones
+    startAnimations();
 });
+
+// Configurar event listeners
+function setupEventListeners() {
+    // Botones de cambio de vista de gráficos
+    document.querySelectorAll('.btn-chart').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const chartType = this.dataset.chart;
+            const viewType = this.dataset.type;
+            cambiarVistaGrafico(chartType, viewType, this);
+        });
+    });
+    
+    // Selector de período
+    document.getElementById('periodo').addEventListener('change', function() {
+        console.log('Cambiando período a:', this.value);
+        // Aquí podrías implementar filtrado de datos
+        mostrarNotificacion(`Mostrando datos del ${this.options[this.selectedIndex].text.toLowerCase()}`);
+    });
+    
+    // Botones de ver más
+    document.getElementById('btnVerAreas')?.addEventListener('click', verTodasAreas);
+    document.getElementById('btnVerEstados')?.addEventListener('click', verDetalleEstados);
+    document.getElementById('btnVerIncapacidades')?.addEventListener('click', verTodasIncapacidades);
+    
+    // Botón de actualizar
+    document.querySelector('.btn-refresh').addEventListener('click', actualizarDashboard);
+}
+
+// Inicializar gráfico mensual
+function initChartMensual() {
+    const ctx = document.getElementById('chartMensual');
+    if (!ctx) {
+        console.error('Elemento chartMensual no encontrado');
+        return;
+    }
+    
+    // Destruir gráfico anterior si existe
+    if (chartMensual) {
+        chartMensual.destroy();
+    }
+    
+    chartMensual = new Chart(ctx, {
+        type: currentChartType,
+        data: {
+            labels: window.dashboardData.mesesLabels,
+            datasets: [{
+                label: 'Incapacidades',
+                data: window.dashboardData.datosMensuales,
+                backgroundColor: currentChartType === 'bar' ? 
+                    window.dashboardData.chartColors.blue + '20' : 
+                    window.dashboardData.chartColors.blue + '80',
+                borderColor: window.dashboardData.chartColors.blue,
+                borderWidth: currentChartType === 'bar' ? 1 : 2,
+                borderRadius: currentChartType === 'bar' ? 4 : 0,
+                borderSkipped: false,
+                tension: currentChartType === 'line' ? 0.4 : 0,
+                fill: currentChartType === 'line'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 10,
+                    cornerRadius: 4,
+                    titleFont: {
+                        size: 12
+                    },
+                    bodyFont: {
+                        size: 12
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.raw}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        stepSize: 1,
+                        precision: 0
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Inicializar gráfico de tipos
+function initChartTipos() {
+    const ctx = document.getElementById('chartTipos');
+    if (!ctx) {
+        console.error('Elemento chartTipos no encontrado');
+        return;
+    }
+    
+    // Destruir gráfico anterior si existe
+    if (chartTipos) {
+        chartTipos.destroy();
+    }
+    
+    chartTipos = new Chart(ctx, {
+        type: currentPieType,
+        data: {
+            labels: window.dashboardData.tiposLabels,
+            datasets: [{
+                data: window.dashboardData.tiposData,
+                backgroundColor: [
+                    window.dashboardData.chartColors.blue,
+                    window.dashboardData.chartColors.green,
+                    window.dashboardData.chartColors.red,
+                    window.dashboardData.chartColors.yellow,
+                    window.dashboardData.chartColors.purple
+                ],
+                borderWidth: 1,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((context.raw / total) * 100);
+                            return `${context.label}: ${context.raw} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            cutout: currentPieType === 'doughnut' ? '50%' : 0
+        }
+    });
+}
+
+// Cambiar vista de gráfico
+function cambiarVistaGrafico(chartType, viewType, button) {
+    if (chartType === 'mes') {
+        currentChartType = viewType;
+        initChartMensual();
+    } else if (chartType === 'tipo') {
+        currentPieType = viewType;
+        if (window.dashboardData.tiposData.length > 0) {
+            initChartTipos();
+        }
+    }
+    
+    // Actualizar estado de botones
+    document.querySelectorAll(`.btn-chart[data-chart="${chartType}"]`).forEach(btn => {
+        btn.classList.remove('active');
+    });
+    button.classList.add('active');
+}
+
+// Actualizar dashboard
+function actualizarDashboard() {
+    const btn = document.querySelector('.btn-refresh');
+    const originalText = btn.innerHTML;
+    
+    btn.innerHTML = '<span>⏳</span> Actualizando...';
+    btn.disabled = true;
+    
+    // Simular actualización
+    setTimeout(() => {
+        location.reload();
+    }, 1000);
+}
+
+// Ver todas las áreas
+function verTodasAreas() {
+    mostrarNotificacion('Redirigiendo a vista completa de áreas');
+    // window.location.href = 'areas.php';
+}
+
+// Ver detalle de estados
+function verDetalleEstados() {
+    mostrarNotificacion('Mostrando detalle de estados de proceso');
+    // window.location.href = 'estados.php';
+}
+
+// Ver todas las incapacidades
+function verTodasIncapacidades() {
+    mostrarNotificacion('Redirigiendo a lista completa de incapacidades');
+    // window.location.href = 'incapacidades.php';
+}
+
+// Mostrar notificación temporal
+function mostrarNotificacion(mensaje) {
+    // Crear elemento de notificación
+    const notificacion = document.createElement('div');
+    notificacion.className = 'notificacion';
+    notificacion.textContent = mensaje;
+    notificacion.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 4px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+        animation: slideIn 0.3s ease;
+    `;
+    
+    document.body.appendChild(notificacion);
+    
+    // Remover después de 3 segundos
+    setTimeout(() => {
+        notificacion.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+            if (notificacion.parentNode) {
+                document.body.removeChild(notificacion);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Animaciones iniciales
+function startAnimations() {
+    // Animación para tarjetas KPI
+    document.querySelectorAll('.kpi-card').forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+    
+    // Animación para gráficos
+    setTimeout(() => {
+        document.querySelectorAll('.chart-container').forEach((container, index) => {
+            container.style.opacity = '0';
+            container.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+                container.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                container.style.opacity = '1';
+                container.style.transform = 'scale(1)';
+            }, index * 150);
+        });
+    }, 500);
+}
+
+// Agregar estilos CSS para animaciones
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// Actualización automática cada 5 minutos (opcional)
+// setInterval(() => {
+//     console.log('Actualizando datos automáticamente...');
+// }, 300000);
